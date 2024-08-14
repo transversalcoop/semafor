@@ -1,0 +1,18 @@
+{% extends "semafor/base.html" %}
+
+{% block content %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Projecte</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for project in object_list %}
+    <tr>
+      <td>{{ project }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
