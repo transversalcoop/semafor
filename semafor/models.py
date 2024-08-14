@@ -1,12 +1,15 @@
 import uuid
 
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 
 MAX_LENGTH = 1000
 
+
 class User(AbstractUser):
     pass
+
 
 class Project(models.Model):
     uuid = models.UUIDField(
@@ -18,6 +21,7 @@ class Project(models.Model):
     date_start = models.DateField()
     date_end = models.DateField()
     archived = models.BooleanField(default=False)
+    confirmed = models.BooleanField(default=False)
     income = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
@@ -25,6 +29,33 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+    def work_assignments(self):
+        m = {}
+        for wa in self.projectworkassignment_set.all():
+            m.setdefault((wa.year, wa.month), []).append(wa)
+
+        totals, explanations = {}, {}
+        for k, was in m.items():
+            totals[k] = sum([x.assignment for x in was])
+            explanations[k] = ", ".join(
+                [f"{x.worker.name} ({x.assignment})" for x in was]
+            )
+
+        return totals, explanations
+
+    def starts(self, year, month):
+        return self.starts_pair() == (year, month)
+
+    def starts_pair(self):
+        return (self.date_start.year, self.date_start.month)
+
+    def ends(self, year, month):
+        return self.ends_pair() == (year, month)
+
+    def ends_pair(self):
+        return (self.date_end.year, self.date_end.month)
+
 
 class Worker(models.Model):
     uuid = models.UUIDField(
@@ -40,9 +71,30 @@ class Worker(models.Model):
     def __str__(self):
         return self.name
 
+
 class ProjectWorkAssignment(models.Model):
     worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     year = models.IntegerField()
     month = models.IntegerField()
-    assignment = models.DecimalField(max_digits=3, decimal_places=2)
+    assignment = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+
+    class Meta:
+        unique_together = ["worker", "project", "year", "month"]
+
+    def __str__(self):
+        return f"{self.worker} - {self.project}: {self.year}-{self.month} {self.assignment}"
+
+    def save(self, *args, **kwargs):
+        if (self.year, self.month) < self.project.starts_pair():
+            raise Exception("No es pot assignar feina abans del principi del projecte")
+        if (self.year, self.month) > self.project.ends_pair():
+            raise Exception("No es pot assignar feina després del final del projecte")
+        if self.assignment < 0:
+            raise Exception("Com a mínim cal assignar un 0% de jornada")
+        if self.assignment > 100:
+            raise Exception("Com a màxim es pot assignar un 100% de jornada")
+        return super().save(*args, **kwargs)

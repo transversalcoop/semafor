@@ -1,4 +1,3 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="ca">
   <head>
@@ -17,9 +16,9 @@
       crossorigin="anonymous"
     ></script>
 
-    <link rel="icon" type="image/x-icon" href="{% static "favicon.ico" %}">
+    <link rel="icon" type="image/x-icon" href="{{ static("favicon.ico") }}">
 
-    <link href="{% static "style.css" %}" rel="stylesheet">
+    <link href="{{ static("style.css") }}" rel="stylesheet">
     <title>Semàfor</title>
   </head>
 
@@ -37,7 +36,7 @@
     <header class="navbar navbar-expand-md bd-navbar border-bottom">
       <nav class="container-fluid flex-wrap flex-md-nowrap" aria-label="Navegació principal">
         <a class="navbar-brand" href="/">
-          <img src="{% static "semafor.png" %}" class="h-8">
+          <img src="{{ static("semafor.png") }}" class="h-8">
         </a>
       </nav>
     </header>
@@ -58,7 +57,7 @@
             <div class="col-lg-4">
               <p class="m-0">Un projecte desenvolupat per</p>
               <a target="_blank" rel="noopener noreferrer" href="https://transversalcoop.org">
-                <img src="{% static "transversal.png" %}" alt="Logo de la Cooperativa Transversal" loading="lazy">
+                <img src="{{ static("transversal.png") }}" alt="Logo de la Cooperativa Transversal" loading="lazy">
               </a>
             </div>
           </div>

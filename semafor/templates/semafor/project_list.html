@@ -5,14 +5,37 @@
   <thead>
     <tr>
       <th>Projecte</th>
+      {% for year, month in time_span %}
+      <th class="text-center">{{ "%02d" % month }}/{{ year }}</th>
+      {% endfor %}
     </tr>
   </thead>
   <tbody>
-  {% for project in object_list %}
+    {% for project in object_list %}
     <tr>
       <td>{{ project }}</td>
+      {% set totals, explanations = project.work_assignments() %}
+      {% for year, month in time_span %}
+      <td
+        title="{{ explanations[(year, month)] or "" }}"
+        class="text-center
+               {% if totals[(year, month)] %}{{ dedication_intensity(totals[(year, month)], workers_count) }}{% endif %}
+               {% if project.starts(year, month) %}border-left{% endif %}
+               {% if project.ends(year, month) %}border-right{% endif %}"
+      >
+        {{ totals[(year, month)] or "" }}
+      </td>
+      {% endfor %}
     </tr>
-  {% endfor %}
+    {% endfor %}
+    <tr class="border-top">
+      <td class="fw-bold">Total</td>
+      {% for year, month in time_span %}
+      <td class="text-center {% if total_worked[(year, month)] %}{{ dedication_intensity(total_worked[(year, month)], workers_count) }}{% endif %}">
+        {{ total_worked[(year, month)] or "" }}
+      </td>
+      {% endfor %}
+    </tr>
   </tbody>
 </table>
 {% endblock %}
