@@ -9,6 +9,14 @@ body, wrapper {
     overflow: hidden;
 }
 
+.navbar-nav .nav-link {
+    color: black;
+}
+
+.navbar-nav .nav-link.active {
+    border-bottom: 2px solid black;
+}
+
 .staging-bow {
     background-color: rgba(255, 0, 0, 0.5);
     text-align: center;
@@ -20,7 +28,18 @@ body, wrapper {
     width: 300px;
 }
 
-.h-8 {
+.table td:has(input) {
+  padding: .25rem;
+}
+
+table.table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+
+.h-2rem {
   height: 2rem;
 }
 
@@ -30,6 +49,10 @@ body, wrapper {
 
 .border-right {
   border-right: 3px solid black;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .dedication-green {
@@ -82,6 +105,12 @@ body, wrapper {
   color: black !important;
 }
 
+.dedication-error {
+  background: repeating-linear-gradient(45deg, white, white 5px, black 5px, black 10px);
+  color: transparent !important;
+}
+
 .dedication-black:hover {
   color: white !important;
 }
+

@@ -1,3 +1,4 @@
+{% from 'semafor/_macros.html' import nav_link %}
 <!DOCTYPE html>
 <html lang="ca">
   <head>
@@ -33,12 +34,20 @@
         <a class="d-inline-flex p-2 m-1" href="#content">Salta al contingut principal</a>
       </div>
     </div>
-    <header class="navbar navbar-expand-md bd-navbar border-bottom">
-      <nav class="container-fluid flex-wrap flex-md-nowrap" aria-label="Navegació principal">
-        <a class="navbar-brand" href="/">
-          <img src="{{ static("semafor.png") }}" class="h-8">
-        </a>
-      </nav>
+    <header>
+      <div class="navbar navbar-expand-md bd-navbar border-bottom"> 
+        <nav class="container-fluid flex-wrap flex-md-nowrap" aria-label="Navegació principal">
+          <a class="navbar-brand" href="/">
+            <img src="{{ static("semafor.png") }}" class="h-2rem">
+          </a>
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            {{ nav_link(request, "Previsió", url("forecast")) }}
+            {{ nav_link(request, "Liquiditat", url("liquidity")) }}
+            {{ nav_link(request, "Avaluació", url("assessment")) }}
+          </ul>
+        </nav>
+      </div>
+      {% block submenu %}{% endblock %}
     </header>
     <wrapper class="d-flex flex-column">
       <main id="content">
@@ -64,5 +73,14 @@
         </div>
       </footer>
     </wrapper>
+  <script>
+htmx.on("htmx:afterSwap", function(e) {
+  let input = e.target.querySelector("input");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+})
+  </script>
   </body>
 </html>

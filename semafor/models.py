@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 
@@ -30,9 +31,13 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-    def work_assignments(self):
+    def work_assignments(self, worker=None):
         m = {}
-        for wa in self.projectworkassignment_set.all():
+        if worker:
+            assignments = self.projectworkassignment_set.filter(worker=worker)
+        else:
+            assignments = self.projectworkassignment_set.all()
+        for wa in assignments:
             m.setdefault((wa.year, wa.month), []).append(wa)
 
         totals, explanations = {}, {}
@@ -70,6 +75,29 @@ class Worker(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class WorkerMonthDedication(models.Model):
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    year = models.IntegerField()
+    month = models.IntegerField()
+    dedication = models.IntegerField(
+        default=100,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+
+    class Meta:
+        unique_together = ["worker", "year", "month"]
+
+    def save(self, *args, **kwargs):
+        if self.dedication < 0:
+            raise Exception("Com a mínim pot haver una dedicació d'un 0% de jornada")
+        if self.dedication > 100:
+            raise Exception("Com a màxim pot haver una dedicació d'un 100% de jornada")
+        return super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("worker_dedication", args=[self.id])
 
 
 class ProjectWorkAssignment(models.Model):

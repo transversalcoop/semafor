@@ -1,0 +1,17 @@
+<td
+  class="text-center clickable {{ dedication_intensity(object.dedication, 100) }}"
+>
+  <input
+    type="number"
+    name="dedication"
+    min="0"
+    max="100"
+    value="{{ object.dedication }}"
+    class="form-control form-control-sm"
+    hx-post="{{ url("update_worker_dedication", args=[object.id]) }}"
+    hx-include="[name='csrfmiddlewaretoken']"
+    hx-trigger="keyup[key=='Enter']"
+    hx-swap="outerHTML"
+    hx-target="closest td"
+  >
+</td>

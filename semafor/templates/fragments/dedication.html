@@ -1,0 +1,7 @@
+<td
+  class="text-center clickable {{ dedication_intensity(object.dedication, 100) }}"
+  hx-get="{{ url("update_worker_dedication", args=[object.id]) }}"
+  hx-swap="outerHTML"
+>
+  {{ object.dedication }}
+</td>

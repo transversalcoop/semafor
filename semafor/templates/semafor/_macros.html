@@ -1,0 +1,61 @@
+{% macro nav_link(request, title, link) %}
+<li class="nav-item">
+  <a class="nav-link {% if link_active(request, link) %}active{% endif %}" aria-current="page" href="{{ link }}">
+    {{ title }}
+  </a>
+</li>
+{% endmacro %}
+
+{% macro workers_menu(request, workers) %}
+<div class="navbar navbar-expand-md bd-navbar"> 
+  <nav class="container-fluid d-flex justify-content-center" aria-label="Navegació secundària">
+    <ul class="navbar-nav mb-2 mb-lg-0">
+      {% for w in workers %}
+      <li class="nav-item">
+        {% set link = url("worker_forecast", args=[w.uuid]) %}
+        <a class="nav-link {% if link_active(request, link, exact=True) %}active{% endif %}" aria-current="page" href="{{ link }}">
+          {{ w.name }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+</div>
+{% endmacro %}
+
+{% macro projects_table_head(title, time_span) %}
+<tr>
+  <th>{{ title }}</th>
+  {% for year, month in time_span %}
+  <th class="text-center">{{ "%02d" % month }}/{{ year }}</th>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None) %}
+{% for project in projects %}
+<tr>
+  <td class="text-nowrap">{{ project }}</td>
+  {% set totals, explanations = project.work_assignments(worker=worker) %}
+  {% for year, month in time_span %}
+  <td
+    title="{% if total_dedication[(year, month)] %}{{ explanations[(year, month)] or "" }}{% else %}{% if worker %}Este treballador no treballa este mes!{% else %}No hi ha cap treballador aquest mes!{% endif %}{% endif %}"
+    class="text-center
+           {% if totals[(year, month)] %}{{ dedication_intensity(totals[(year, month)], total_dedication[(year, month)]) }}{% endif %}
+           {% if project.starts(year, month) %}border-left{% endif %}
+           {% if project.ends(year, month) %}border-right{% endif %}"
+  >
+    {{ totals[(year, month)] or "" }}
+  </td>
+  {% endfor %}
+</tr>
+{% endfor %}
+<tr class="border-top">
+  <td class="fw-bold">Total</td>
+  {% for year, month in time_span %}
+  <td class="text-center {% if total_worked[(year, month)] %}{{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}{% endif %}">
+    {{ total_worked[(year, month)] or "" }}
+  </td>
+  {% endfor %}
+</tr>
+{% endmacro %}

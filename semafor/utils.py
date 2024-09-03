@@ -6,16 +6,25 @@ def months_range(date_start, date_end):
         yield y, m + 1
 
 
-def dedication_intensity(dedication, multiplier):
-    dedication = dedication / multiplier
-    if dedication <= 20:
+def dedication_intensity(dedication, total_dedication):
+    if not total_dedication:
+        return "dedication-error"
+
+    intensity = dedication / total_dedication
+    if intensity <= 0.20:
         return "dedication-green"
-    elif dedication <= 40:
+    elif intensity <= 0.40:
         return "dedication-blue"
-    elif dedication <= 60:
+    elif intensity <= 0.60:
         return "dedication-yellow"
-    elif dedication <= 80:
+    elif intensity <= 0.80:
         return "dedication-orange"
-    elif dedication <= 100:
+    elif intensity <= 1:
         return "dedication-red"
     return "dedication-black"
+
+
+def link_active(request, urlpath, exact=False):
+    if exact:
+        return request.path == urlpath
+    return str(request.path).startswith(urlpath)
