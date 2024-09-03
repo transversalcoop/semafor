@@ -12,6 +12,7 @@ def environment(**options):
     env.globals.update(
         {
             "len": len,
+            "dir": dir,
             "url": reverse,
             "static": static,
             "settings": settings,

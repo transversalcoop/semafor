@@ -7,10 +7,10 @@
     min="0"
     max="100"
     value="{{ object.dedication }}"
-    class="form-control form-control-sm"
+    class="form-control form-control-sm w-5rem"
     hx-post="{{ url("update_worker_dedication", args=[object.id]) }}"
     hx-include="[name='csrfmiddlewaretoken']"
-    hx-trigger="keyup[key=='Enter']"
+    hx-trigger="keyup[key=='Enter'], blur"
     hx-swap="outerHTML"
     hx-target="closest td"
   >

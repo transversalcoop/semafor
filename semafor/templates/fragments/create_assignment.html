@@ -1,0 +1,17 @@
+<td
+  class="text-center clickable"
+>
+  <input
+    type="number"
+    name="assignment"
+    min="0"
+    max="100"
+    class="form-control form-control-sm w-5rem"
+    hx-post="{{ url("create_project_assignment", args=[project_id, worker_id, year, month]) }}"
+    hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker_id }}", "project": "{{ project_id }}"}'
+    hx-include="[name='csrfmiddlewaretoken']"
+    hx-trigger="keyup[key=='Enter'], blur"
+    hx-swap="outerHTML"
+    hx-target="closest td"
+  >
+</td>

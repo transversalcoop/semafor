@@ -2,16 +2,18 @@ from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.contrib.auth.mixins import UserPassesTestMixin
 
-from semafor.models import Project, Worker, WorkerMonthDedication
+from semafor.models import Project, Worker, WorkerMonthDedication, ProjectWorkAssignment
 from semafor.utils import months_range
 
 # Helpers
+
 
 class StaffRequiredMixin(UserPassesTestMixin):
     login_url = "/admin/login/"
 
     def test_func(self):
         return self.request.user.is_staff
+
 
 def add_projects_context(context, projects, worker=None):
     context["projects"] = projects
@@ -31,6 +33,16 @@ def add_projects_context(context, projects, worker=None):
             total_worked[k] += v
     context["total_worked"] = total_worked
 
+    if worker:
+        project_assignments = {}
+        for p in projects:
+            project_assignments[p.uuid] = {}
+            for pa in ProjectWorkAssignment.objects.filter(project=p, worker=worker):
+                k = (pa.year, pa.month)
+                project_assignments[p.uuid][k] = pa
+
+        context["project_assignments"] = project_assignments
+
     total_dedication = {}
     worker_dedications = {}
     if worker:
@@ -47,7 +59,9 @@ def add_projects_context(context, projects, worker=None):
 
     return context
 
+
 # Views
+
 
 def index(request):
     return redirect("forecast")
@@ -75,13 +89,14 @@ class WorkerForecastView(StaffRequiredMixin, DetailView):
         return add_projects_context(
             context,
             Project.objects.filter(confirmed=True),
-            worker=self.get_queryset().first(),
+            worker=self.get_object(),
         )
 
 
 class WorkerDedicationView(StaffRequiredMixin, DetailView):
     model = WorkerMonthDedication
     template_name = "fragments/dedication.html"
+
 
 class CreateWorkerDedicationView(StaffRequiredMixin, CreateView):
     model = WorkerMonthDedication
@@ -93,3 +108,21 @@ class UpdateWorkerDedicationView(StaffRequiredMixin, UpdateView):
     fields = ["dedication"]
     template_name = "fragments/update_dedication.html"
 
+
+class WorkAssignmentView(StaffRequiredMixin, DetailView):
+    model = ProjectWorkAssignment
+    template_name = "fragments/assignment.html"
+
+
+class CreateWorkAssignmentView(StaffRequiredMixin, CreateView):
+    model = ProjectWorkAssignment
+    fields = ["worker", "project", "year", "month", "assignment"]
+
+    def get(self, request, *args, **kwargs):
+        return render(request, "fragments/create_assignment.html", kwargs)
+
+
+class UpdateWorkAssignmentView(StaffRequiredMixin, UpdateView):
+    model = ProjectWorkAssignment
+    fields = ["assignment"]
+    template_name = "fragments/update_assignment.html"

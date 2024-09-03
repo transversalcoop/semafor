@@ -89,6 +89,9 @@ class WorkerMonthDedication(models.Model):
     class Meta:
         unique_together = ["worker", "year", "month"]
 
+    def __str__(self):
+        return f"{self.worker}: {self.year}-{self.month} {self.dedication}%"
+
     def save(self, *args, **kwargs):
         if self.dedication < 0:
             raise Exception("Com a mínim pot haver una dedicació d'un 0% de jornada")
@@ -126,3 +129,6 @@ class ProjectWorkAssignment(models.Model):
         if self.assignment > 100:
             raise Exception("Com a màxim es pot assignar un 100% de jornada")
         return super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("project_assignment", args=[self.id])

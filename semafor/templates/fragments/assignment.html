@@ -1,0 +1,9 @@
+{# TODO should not be 100, should be the work of that worker that month #}
+<td
+  class="text-center clickable {{ dedication_intensity(object.assignment, 100) }}"
+  hx-get="{{ url("update_project_assignment", args=[object.id]) }}"
+  hx-swap="outerHTML"
+>
+  {{ object.assignment }}
+</td>
+

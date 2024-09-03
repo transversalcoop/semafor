@@ -43,6 +43,10 @@ table.table {
   height: 2rem;
 }
 
+.w-5rem {
+  width: 5rem;
+}
+
 .border-left {
   border-left: 3px solid black;
 }
