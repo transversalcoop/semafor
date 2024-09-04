@@ -61,6 +61,10 @@ class Project(models.Model):
     def ends_pair(self):
         return (self.date_end.year, self.date_end.month)
 
+    def active(self, year, month):
+        month, starts, ends = (year, month), self.starts_pair(), self.ends_pair()
+        return month >= starts and month <= ends
+
 
 class Worker(models.Model):
     uuid = models.UUIDField(

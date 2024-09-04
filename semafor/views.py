@@ -1,3 +1,4 @@
+from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -60,6 +61,20 @@ def add_projects_context(context, projects, worker=None):
     return context
 
 
+def add_total_dedication_context(context, obj):
+    try:
+        wd = WorkerMonthDedication.objects.get(
+            worker=obj.worker,
+            year=obj.year,
+            month=obj.month,
+        )
+        dedication = wd.dedication
+    except WorkerMonthDedication.DoesNotExist:
+        dedication = 0
+    context["total_dedication"] = dedication
+    return context
+
+
 # Views
 
 
@@ -109,20 +124,28 @@ class UpdateWorkerDedicationView(StaffRequiredMixin, UpdateView):
     template_name = "fragments/update_dedication.html"
 
 
-class WorkAssignmentView(StaffRequiredMixin, DetailView):
+class ProjectWorkAssignmentView(StaffRequiredMixin, DetailView):
     model = ProjectWorkAssignment
     template_name = "fragments/assignment.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return add_total_dedication_context(context, self.object)
 
-class CreateWorkAssignmentView(StaffRequiredMixin, CreateView):
+
+class CreateProjectWorkAssignmentView(StaffRequiredMixin, CreateView):
     model = ProjectWorkAssignment
-    fields = ["worker", "project", "year", "month", "assignment"]
+    fields = ["worker", "project", "year", "month"]
 
-    def get(self, request, *args, **kwargs):
-        return render(request, "fragments/create_assignment.html", kwargs)
+    def get_success_url(self):
+        return reverse("update_project_assignment", args=[self.object.id])
 
 
-class UpdateWorkAssignmentView(StaffRequiredMixin, UpdateView):
+class UpdateProjectWorkAssignmentView(StaffRequiredMixin, UpdateView):
     model = ProjectWorkAssignment
     fields = ["assignment"]
     template_name = "fragments/update_assignment.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return add_total_dedication_context(context, self.object)

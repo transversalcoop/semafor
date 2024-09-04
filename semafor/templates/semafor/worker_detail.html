@@ -32,7 +32,7 @@
       {% endfor %}
     </tr>
     {{ projects_table_head("Projectes", time_span) }}
-    {{ projects_table(projects, time_span, total_worked, total_dedication, worker=object, project_assignments=project_assignments) }}
+    {{ projects_table(projects, time_span, total_worked, total_dedication, worker=object, project_assignments=project_assignments, worker_dedications=worker_dedications) }}
   </tbody>
 </table>
 {% endblock %}

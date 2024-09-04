@@ -23,6 +23,8 @@
 </div>
 {% endmacro %}
 
+{% macro project_classes(project, year, month) %}{% if project.starts(year, month) %} project-starts{% endif %}{% if project.ends(year, month) %} project-ends{% endif %}{% endmacro %}
+
 {% macro projects_table_head(title, time_span) %}
 <tr>
   <th>{{ title }}</th>
@@ -32,7 +34,7 @@
 </tr>
 {% endmacro %}
 
-{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None) %}
+{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None, worker_dedications=None) %}
 {% for project in projects %}
 <tr>
   <td class="text-nowrap">{{ project }}</td>
@@ -41,21 +43,22 @@
     {% if worker %}
       {% set pa = project_assignments[project.uuid][(year, month)] %}
       {% if pa %}
-        {% with object = pa %}{% include 'fragments/assignment.html' %}{% endwith %}
+        {% with object = pa, total_dedication = worker_dedications[(year, month)].dedication %}{% include 'fragments/assignment.html' %}{% endwith %}
       {% else %}
         <td
-          class="text-center clickable"
-          hx-get="{{ url("create_project_assignment", args=[project.uuid, worker.uuid, year, month]) }}"
+          class="text-center {% if project.active(year, month) %}clickable{% endif %} {{ project_classes(project, year, month) }}"
+          {% if project.active(year, month) %}
+          hx-post="{{ url("create_project_assignment") }}"
+          hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}", "project": "{{ project.uuid }}"}'
+          hx-include="[name='csrfmiddlewaretoken']"
           hx-swap="outerHTML"
+          {% endif %}
         ></td>
       {% endif %}
     {% else %}
       <td
         title="{% if total_dedication[(year, month)] %}{{ explanations[(year, month)] or "" }}{% else %}No hi ha cap treballador aquest mes!{% endif %}"
-        class="text-center
-               {% if totals[(year, month)] %}{{ dedication_intensity(totals[(year, month)], total_dedication[(year, month)]) }}{% endif %}
-               {% if project.starts(year, month) %}border-left{% endif %}
-               {% if project.ends(year, month) %}border-right{% endif %}"
+        class="text-center {{ dedication_intensity(totals[(year, month)], total_dedication[(year, month)]) }} {{ project_classes(project, year, month) }}"
       >
         {{ totals[(year, month)] or "" }}
       </td>
@@ -66,7 +69,7 @@
 <tr class="border-top">
   <td class="fw-bold">Total</td>
   {% for year, month in time_span %}
-  <td class="text-center {% if total_worked[(year, month)] %}{{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}{% endif %}">
+  <td class="text-center {{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}">
     {{ total_worked[(year, month)] or "" }}
   </td>
   {% endfor %}

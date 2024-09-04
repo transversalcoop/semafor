@@ -47,12 +47,12 @@ table.table {
   width: 5rem;
 }
 
-.border-left {
-  border-left: 3px solid black;
+.project-starts {
+  border-left: 4px solid grey;
 }
 
-.border-right {
-  border-right: 3px solid black;
+.project-ends {
+  border-right: 4px solid grey;
 }
 
 .clickable {

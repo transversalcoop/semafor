@@ -7,6 +7,8 @@ def months_range(date_start, date_end):
 
 
 def dedication_intensity(dedication, total_dedication):
+    if not dedication:
+        return ""
     if not total_dedication:
         return "dedication-error"
 

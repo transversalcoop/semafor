@@ -1,6 +1,6 @@
-{# TODO should not be 100, should be the work of that worker that month #}
+{% from 'semafor/_macros.html' import project_classes %}
 <td
-  class="text-center clickable {{ dedication_intensity(object.assignment, 100) }}"
+  class="text-center clickable {{ dedication_intensity(object.assignment, total_dedication) }} {{ project_classes(object.project, object.year, object.month) }}"
 >
   <input
     type="number"
