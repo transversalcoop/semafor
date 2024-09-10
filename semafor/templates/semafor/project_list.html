@@ -8,10 +8,12 @@
 
 {% block content %}
 <h1>Previsió general</h1>
-<table class="table">
-  <thead>{{ projects_table_head("Projecte", time_span) }}</thead>
-  <tbody>
-    {{ projects_table(projects, time_span, total_worked, total_dedication) }}
-  </tbody>
-</table>
+<div class="fix-first-column">
+  <table class="table">
+    <thead>{{ projects_table_head("Projecte", time_span) }}</thead>
+    <tbody>
+      {{ projects_table(projects, time_span, total_worked, total_dedication) }}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -37,7 +37,7 @@
 {% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None, worker_dedications=None) %}
 {% for project in projects %}
 <tr>
-  <td class="text-nowrap">{{ project }}</td>
+  <td class="text-nowrap overflow-hidden text-truncate">{{ project }}</td>
   {% set totals, explanations = project.work_assignments(worker=worker) %}
   {% for year, month in time_span %}
     {% if worker %}
@@ -53,7 +53,7 @@
           hx-include="[name='csrfmiddlewaretoken']"
           hx-swap="outerHTML"
           {% endif %}
-        ></td>
+          ></td>
       {% endif %}
     {% else %}
       <td

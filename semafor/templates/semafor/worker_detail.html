@@ -9,30 +9,32 @@
 {% block content %}
 <h1>Previsió de {{ object.name }}</h1>
 {{ csrf_input }}
-<table class="table">
-  <thead>
-    {{ projects_table_head("Jornada", time_span) }}
-  </thead>
-  <tbody>
-    <tr>
-      <td class="text-nowrap">Dedicació</td>
-      {% for year, month in time_span %}
-        {% set wd = worker_dedications[(year, month)] %}
-        {% if wd %}
-          {% with object = wd %}{% include 'fragments/dedication.html' %}{% endwith %}
-        {% else %}
-        <td
-          class="text-center clickable"
-          hx-post="{{ url("create_worker_dedication") }}"
-          hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}"}'
-          hx-include="[name='csrfmiddlewaretoken']"
-          hx-swap="outerHTML"
-        ></td>
-        {% endif %}
-      {% endfor %}
-    </tr>
-    {{ projects_table_head("Projectes", time_span) }}
-    {{ projects_table(projects, time_span, total_worked, total_dedication, worker=object, project_assignments=project_assignments, worker_dedications=worker_dedications) }}
-  </tbody>
-</table>
+<div class="fix-first-column">
+  <table class="table">
+    <thead>
+      {{ projects_table_head("Jornada", time_span) }}
+    </thead>
+    <tbody>
+      <tr>
+        <td class="text-nowrap">Dedicació</td>
+        {% for year, month in time_span %}
+          {% set wd = worker_dedications[(year, month)] %}
+          {% if wd %}
+            {% with object = wd %}{% include 'fragments/dedication.html' %}{% endwith %}
+          {% else %}
+          <td
+            class="text-center clickable"
+            hx-post="{{ url("create_worker_dedication") }}"
+            hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}"}'
+            hx-include="[name='csrfmiddlewaretoken']"
+            hx-swap="outerHTML"
+          ></td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {{ projects_table_head("Projectes", time_span) }}
+      {{ projects_table(projects, time_span, total_worked, total_dedication, worker=object, project_assignments=project_assignments, worker_dedications=worker_dedications) }}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

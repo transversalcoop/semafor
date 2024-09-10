@@ -3,29 +3,50 @@ body, wrapper {
 }
 
 #content {
-    margin: 0 auto;
-    flex: 1 1 auto;
-    width: 100%;
-    overflow: hidden;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  width: 100%;
+  overflow: hidden;
 }
 
 .navbar-nav .nav-link {
-    color: black;
+  color: black;
 }
 
 .navbar-nav .nav-link.active {
-    border-bottom: 2px solid black;
+  border-bottom: 2px solid black;
 }
 
 .staging-bow {
-    background-color: rgba(255, 0, 0, 0.5);
-    text-align: center;
-    position: absolute;
-    transform: rotate(-45deg);
-    top: 50px;
-    left: -100px;
-    z-index: 1000;
-    width: 300px;
+  background-color: rgba(255, 0, 0, 0.5);
+  text-align: center;
+  position: absolute;
+  transform: rotate(-45deg);
+  top: 50px;
+  left: -100px;
+  z-index: 1000;
+  width: 300px;
+}
+
+.fix-first-column {
+  width: 100%;
+}
+
+.fix-first-column > table.table {
+  margin-left: 15rem;
+}
+
+.fix-first-column > table.table > * > tr > th:first-child,
+.fix-first-column > table.table > * > tr > td:first-child {
+  position: absolute;
+  width: 15rem;
+  margin-left: -15rem;
+  background: #ccc;
+}
+
+.fix-first-column > table.table > * > tr > th,
+.fix-first-column > table.table > * > tr > td {
+  white-space: nowrap;
 }
 
 .table td:has(input) {
@@ -38,6 +59,10 @@ table.table {
   white-space: nowrap;
 }
 
+table.table td {
+  min-height: 41px;
+  height: 41px;
+}
 
 .h-2rem {
   height: 2rem;
