@@ -28,25 +28,42 @@ body, wrapper {
   width: 300px;
 }
 
-.fix-first-column {
-  width: 100%;
+table.table {
+    white-space: nowrap;
+    margin: 0;
+    table-layout: fixed;
 }
 
-.fix-first-column > table.table {
-  margin-left: 15rem;
+table.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: 25vw;
+    background: white;
+    border-right: 1px solid black;
 }
 
-.fix-first-column > table.table > * > tr > th:first-child,
-.fix-first-column > table.table > * > tr > td:first-child {
-  position: absolute;
-  width: 15rem;
-  margin-left: -15rem;
-  background: #ccc;
+table.table td {
+    background: #fff;
+    text-align: center;
 }
 
-.fix-first-column > table.table > * > tr > th,
-.fix-first-column > table.table > * > tr > td {
-  white-space: nowrap;
+table.table tbody th {
+    position: relative;
+    border-right: 1px solid black;
+}
+
+table.table thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+table.table tbody th {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 1;
 }
 
 .table td:has(input) {
@@ -59,17 +76,16 @@ table.table {
   white-space: nowrap;
 }
 
-table.table td {
-  min-height: 41px;
-  height: 41px;
-}
-
 .h-2rem {
   height: 2rem;
 }
 
 .w-5rem {
   width: 5rem;
+}
+
+.border-right {
+  border-right: 1px solid black;
 }
 
 .project-starts {

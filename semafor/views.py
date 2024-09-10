@@ -3,6 +3,9 @@ from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.contrib.auth.mixins import UserPassesTestMixin
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 from semafor.models import Project, Worker, WorkerMonthDedication, ProjectWorkAssignment
 from semafor.utils import months_range
 
@@ -145,6 +148,15 @@ class UpdateProjectWorkAssignmentView(StaffRequiredMixin, UpdateView):
     model = ProjectWorkAssignment
     fields = ["assignment"]
     template_name = "fragments/update_assignment.html"
+
+    def post(self, *args, **kwargs):
+        response = super().post(*args, **kwargs)
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"assignments_worker_{self.object.worker.uuid}",
+            {"type": "assignment", "assignment_id": self.object.id},
+        )
+        return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

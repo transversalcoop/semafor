@@ -32,6 +32,7 @@ STAGING_ENVIRONMENT_NAME = os.getenv("DJANGO_STAGING_ENVIRONMENT_NAME", "")
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -85,7 +86,16 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = "config.wsgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("DJANGO_REDIS_HOST", None), 6379)],
+        },
+    },
+}
 
 
 # Database

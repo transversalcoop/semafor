@@ -25,19 +25,19 @@
 
 {% macro project_classes(project, year, month) %}{% if project.starts(year, month) %} project-starts{% endif %}{% if project.ends(year, month) %} project-ends{% endif %}{% endmacro %}
 
-{% macro projects_table_head(title, time_span) %}
+{% macro projects_table_head(title, time_span, el="th") %}
 <tr>
   <th>{{ title }}</th>
   {% for year, month in time_span %}
-  <th class="text-center">{{ "%02d" % month }}/{{ year }}</th>
+  <{{ el }} class="text-center">{{ "%02d" % month }}/{{ year }}</{{ el }}>
   {% endfor %}
 </tr>
 {% endmacro %}
 
-{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None, worker_dedications=None) %}
+{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None, worker_dedications=None, id_prefix="total") %}
 {% for project in projects %}
 <tr>
-  <td class="text-nowrap overflow-hidden text-truncate">{{ project }}</td>
+  <th class="text-nowrap">{{ project }}</th>
   {% set totals, explanations = project.work_assignments(worker=worker) %}
   {% for year, month in time_span %}
     {% if worker %}
@@ -66,10 +66,10 @@
   {% endfor %}
 </tr>
 {% endfor %}
-<tr class="border-top">
-  <td class="fw-bold">Total</td>
+<tr class="border-top" hx-ext="ws" ws-connect="/ws/{% if worker %}worker/{{ worker.uuid }}{% else %}total{% endif %}/">
+  <th class="fw-bold">Total</th>
   {% for year, month in time_span %}
-  <td class="text-center {{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}">
+  <td id="{% if worker %}worker-{{ worker.uuid }}{% else %}total{% endif %}-{{ year }}-{{ month }}" class="text-center {{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}">
     {{ total_worked[(year, month)] or "" }}
   </td>
   {% endfor %}

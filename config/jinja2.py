@@ -13,6 +13,7 @@ def environment(**options):
         {
             "len": len,
             "dir": dir,
+            "str": str,
             "url": reverse,
             "static": static,
             "settings": settings,
