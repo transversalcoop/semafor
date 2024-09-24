@@ -24,7 +24,7 @@
     <title>Semàfor</title>
   </head>
 
-  <body>
+  <body {% if not settings.DEBUG %}hx-boost="true"{% endif %}>
     {% if settings.STAGING_ENVIRONMENT_NAME %}
     <div class="staging-bow">
       {{ settings.STAGING_ENVIRONMENT_NAME }}

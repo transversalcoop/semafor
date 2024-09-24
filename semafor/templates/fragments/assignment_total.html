@@ -1,0 +1,3 @@
+<td id="{% if worker %}worker-{{ worker.uuid }}{% else %}total{% endif %}-{{ year }}-{{ month }}" class="text-center {{ dedication_intensity(total_worked, total_dedication) }}">
+  {{ total_worked or "" }}
+</td>

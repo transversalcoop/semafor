@@ -43,9 +43,10 @@
     {% if worker %}
       {% set pa = project_assignments[project.uuid][(year, month)] %}
       {% if pa %}
-        {% with object = pa, total_dedication = worker_dedications[(year, month)].dedication %}{% include 'fragments/assignment.html' %}{% endwith %}
+      {% with object = pa, total_dedication = worker_dedications.get((year, month), {}).dedication %}{% include 'fragments/assignment.html' %}{% endwith %}
       {% else %}
         <td
+          id="project-{{ project.uuid }}-worker-{{ worker.uuid }}-{{ year }}-{{ month }}"
           class="text-center {% if project.active(year, month) %}clickable{% endif %} {{ project_classes(project, year, month) }}"
           {% if project.active(year, month) %}
           hx-post="{{ url("create_project_assignment") }}"
@@ -69,9 +70,7 @@
 <tr class="border-top" hx-ext="ws" ws-connect="/ws/{% if worker %}worker/{{ worker.uuid }}{% else %}total{% endif %}/">
   <th class="fw-bold">Total</th>
   {% for year, month in time_span %}
-  <td id="{% if worker %}worker-{{ worker.uuid }}{% else %}total{% endif %}-{{ year }}-{{ month }}" class="text-center {{ dedication_intensity(total_worked[(year, month)], total_dedication[(year, month)]) }}">
-    {{ total_worked[(year, month)] or "" }}
-  </td>
+    {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/assignment_total.html' %}{% endwith %}
   {% endfor %}
 </tr>
 {% endmacro %}

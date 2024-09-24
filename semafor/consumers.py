@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from semafor.models import ProjectWorkAssignment
+from semafor.models import ProjectWorkAssignment, WorkerMonthDedication
 
 
 class AssignmentsConsumer(AsyncWebsocketConsumer):
@@ -26,7 +26,9 @@ class AssignmentsConsumer(AsyncWebsocketConsumer):
         pass
 
     async def assignment(self, event):
-        assignment = await ProjectWorkAssignment.objects.aget(id=event["assignment_id"])
-        await self.send(
-            text_data=f'<div id="worker-{self.worker_id}-2024-8">new assignment!</div>'
-        )
+        await self.send(event["worker_project"])
+        await self.send(event["worker_total"])
+
+    async def assignment_total(self, event):
+        await self.send(event["project"])
+        await self.send(event["total"])

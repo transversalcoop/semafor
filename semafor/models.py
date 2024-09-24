@@ -12,6 +12,26 @@ class User(AbstractUser):
     pass
 
 
+# TODO make everything organized inside organizations with authorized users; the views should be changed so that
+# they can be seen by authorized users, not staff; the urls should be updated to always reference the organization
+# from within we are working
+#    organizations = models.ManyToManyField(
+#        "Organization", related_name="authorized_users"
+#    )
+#
+#
+# class Organization(models.Model):
+#    uuid = models.UUIDField(
+#        default=uuid.uuid4,
+#        editable=False,
+#        primary_key=True,
+#    )
+#    name = models.CharField(max_length=MAX_LENGTH)
+#    worker_monthly_cost = models.DecimalField(max_digits=10, decimal_places=2)
+# inside Project
+#    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+
+
 class Project(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,

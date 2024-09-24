@@ -1,6 +1,7 @@
 from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
+from django.template.loader import render_to_string
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 from asgiref.sync import async_to_sync
@@ -151,11 +152,55 @@ class UpdateProjectWorkAssignmentView(StaffRequiredMixin, UpdateView):
 
     def post(self, *args, **kwargs):
         response = super().post(*args, **kwargs)
+        assignment = self.object
+        try:
+            month_dedication = WorkerMonthDedication.objects.get(
+                worker=assignment.worker,
+                year=assignment.year,
+                month=assignment.month,
+            )
+            total_dedication = month_dedication.dedication
+        except WorkerMonthDedication.DoesNotExist:
+            total_dedication = 0
+
+        worker_project_td = render_to_string(
+            "fragments/assignment.html",
+            {"object": assignment, "total_dedication": total_dedication},
+        )
+
+        total_worked = 0
+        for a in ProjectWorkAssignment.objects.filter(
+            worker=assignment.worker, year=assignment.year, month=assignment.month
+        ):
+            total_worked += a.assignment
+        worker_total_td = render_to_string(
+            "fragments/assignment_total.html",
+            {
+                "worker": assignment.worker,
+                "year": assignment.year,
+                "month": assignment.month,
+                "total_worked": total_worked,
+                "total_dedication": total_dedication,
+            },
+        )
+        # TODO check there are the proper quantity of sends done
+        print("WORKER PROJECT:", worker_project_td)
+        print("WORKER TOTAL:", worker_total_td)
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"assignments_worker_{self.object.worker.uuid}",
-            {"type": "assignment", "assignment_id": self.object.id},
+            {
+                "type": "assignment",
+                "worker_project": worker_project_td,
+                "worker_total": worker_total_td,
+            },
         )
+        # TODO send also project update for global
+        # TODO send also total update for global
+        # async_to_sync(channel_layer.group_send)(
+        #    f"assignments_total",
+        #    {"type": "assignment_total", "project": project_td, "total": total_td},
+        # )
         return response
 
     def get_context_data(self, **kwargs):

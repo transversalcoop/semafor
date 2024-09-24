@@ -151,7 +151,7 @@ table.table {
 }
 
 .dedication-error {
-  background: repeating-linear-gradient(45deg, white, white 5px, black 5px, black 10px);
+  background: repeating-linear-gradient(45deg, white, white 5px, black 5px, black 10px) !important;
   color: transparent !important;
 }
 
