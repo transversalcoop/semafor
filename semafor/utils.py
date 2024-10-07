@@ -1,3 +1,6 @@
+from django.utils.translation import gettext_lazy as _
+
+
 def months_range(date_start, date_end):
     ym_start = 12 * date_start.year + date_start.month - 1
     ym_end = 12 * date_end.year + date_end.month
@@ -30,3 +33,9 @@ def link_active(request, urlpath, exact=False):
     if exact:
         return request.path == urlpath
     return str(request.path).startswith(urlpath)
+
+
+def yes_no(b):
+    if b:
+        return _("Sí")
+    return _("No")

@@ -1,0 +1,13 @@
+{% extends "semafor/base.html" %}
+
+{% from 'semafor/_macros.html' import workers_menu %}
+
+{% block submenu %}
+{{ workers_menu(request, workers) }}
+{% endblock %}
+
+{% block content %}
+{{ csrf_input }}
+{% include 'fragments/worker_forecast.html' %}
+<div hx-ext="ws" ws-connect="/ws/forecast/worker/{{ object.uuid }}/"></div>
+{% endblock %}

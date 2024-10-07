@@ -1,15 +1,15 @@
 {% from 'semafor/_macros.html' import project_classes %}
 <td
-  class="text-center clickable {{ dedication_intensity(object.assignment, total_dedication) }} {{ project_classes(object.project, object.year, object.month) }}"
+  class="text-center clickable {{ dedication_intensity(object.forecast, total_dedication) }} {{ project_classes(object.project, object.year, object.month) }}"
 >
   <input
     type="number"
-    name="assignment"
+    name="forecast"
     min="0"
     max="100"
-    value="{{ object.assignment }}"
+    value="{{ object.forecast }}"
     class="form-control form-control-sm w-5rem"
-    hx-post="{{ url("update_project_assignment", args=[object.id]) }}"
+    hx-post="{{ url("update_work_forecast", args=[object.id]) }}"
     hx-include="[name='csrfmiddlewaretoken']"
     hx-trigger="keyup[key=='Enter'], blur"
     hx-swap="outerHTML"

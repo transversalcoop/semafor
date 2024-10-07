@@ -1,0 +1,8 @@
+{% from 'semafor/_macros.html' import project_classes %}
+<td
+  id="project-{{ project.uuid }}-{{ year }}-{{ month }}"
+  title="{% if total_dedication %}{{ explanation or "" }}{% else %}{{ _("No hi ha cap treballador aquest mes!") }}{% endif %}"
+  class="text-center {{ dedication_intensity(total_worked, total_dedication) }} {{ project_classes(project, year, month) }}"
+>
+  {{ total_worked or "" }}
+</td>

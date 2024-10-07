@@ -9,6 +9,8 @@ jinja2 = "*"
 channels = "*"
 daphne = "*"
 channels-redis = "*"
+babel = "*"
+django-debug-toolbar = "*"
 
 [dev-packages]
 

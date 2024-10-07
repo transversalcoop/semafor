@@ -76,12 +76,28 @@ table.table {
   white-space: nowrap;
 }
 
+table.table th a {
+  color: black;
+  text-decoration: none;
+}
+
+table.table th a:hover {
+  text-decoration: underline;
+}
+
+/* TODO not working, but htmx documentation says it should... https://htmx.org/examples/animations/ */
+/* .smooth { transition: all 500ms ease-in; } */
+
 .h-2rem {
   height: 2rem;
 }
 
 .w-5rem {
   width: 5rem;
+}
+
+.border-top {
+  border-top: 1px solid black !important;
 }
 
 .border-right {
@@ -159,3 +175,6 @@ table.table {
   color: white !important;
 }
 
+.columns-3 {
+  columns: 3;
+}

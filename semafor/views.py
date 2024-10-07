@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.template.loader import render_to_string
@@ -7,7 +8,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from semafor.models import Project, Worker, WorkerMonthDedication, ProjectWorkAssignment
+from semafor.models import Project, Worker, WorkerMonthDedication, WorkForecast
 from semafor.utils import months_range
 
 # Helpers
@@ -20,7 +21,13 @@ class StaffRequiredMixin(UserPassesTestMixin):
         return self.request.user.is_staff
 
 
-def add_projects_context(context, projects, worker=None):
+class IgnoreResponseMixin:
+    def get_success_url(self):
+        return reverse("ignore")
+
+
+def add_projects_context(context, worker=None):
+    projects = Project.objects.filter(archived=False)
     context["projects"] = projects
     context["workers"] = Worker.objects.all()
     dates_start = [x.date_start for x in projects]
@@ -30,24 +37,37 @@ def add_projects_context(context, projects, worker=None):
         date_end = max(dates_end)
         context["time_span"] = list(months_range(date_start, date_end))
 
-    total_worked = {}
-    for p in projects:
-        totals, _ = p.work_assignments(worker=worker)
-        for k, v in totals.items():
-            total_worked.setdefault(k, 0)
-            total_worked[k] += v
-    context["total_worked"] = total_worked
+    add_worked(context, projects, worker=worker)
 
     if worker:
-        project_assignments = {}
+        project_forecasts = {}
         for p in projects:
-            project_assignments[p.uuid] = {}
-            for pa in ProjectWorkAssignment.objects.filter(project=p, worker=worker):
+            project_forecasts[p.uuid] = {}
+            for pa in WorkForecast.objects.filter(project=p, worker=worker):
                 k = (pa.year, pa.month)
-                project_assignments[p.uuid][k] = pa
+                project_forecasts[p.uuid][k] = pa
 
-        context["project_assignments"] = project_assignments
+        context["project_forecasts"] = project_forecasts
 
+    add_dedications(context, worker=worker)
+    return context
+
+
+def add_worked(context, projects, worker=None):
+    confirmed_worked, total_worked = {}, {}
+    for p in projects:
+        totals, _ = p.work_forecasts(worker=worker)
+        for k, v in totals.items():
+            total_worked.setdefault(k, 0)
+            confirmed_worked.setdefault(k, 0)
+            total_worked[k] += v
+            if p.confirmed:
+                confirmed_worked[k] += v
+    context["confirmed_worked"] = confirmed_worked
+    context["total_worked"] = total_worked
+
+
+def add_dedications(context, worker=None):
     total_dedication = {}
     worker_dedications = {}
     if worker:
@@ -58,10 +78,19 @@ def add_projects_context(context, projects, worker=None):
         k = (wd.year, wd.month)
         total_dedication.setdefault(k, 0)
         total_dedication[k] += wd.dedication
-        worker_dedications[k] = wd
+        worker_dedications.setdefault(wd.worker.uuid, {})
+        worker_dedications[wd.worker.uuid][k] = wd
+
     context["total_dedication"] = total_dedication
     context["worker_dedications"] = worker_dedications
 
+
+def add_workers_context(project):
+    context = {"object": project}
+    context["time_span"] = list(months_range(project.date_start, project.date_end))
+    context["workers"] = Worker.objects.all()
+    add_worked(context, [project])
+    add_dedications(context)
     return context
 
 
@@ -86,30 +115,34 @@ def index(request):
     return redirect("forecast")
 
 
+def ignore(request):
+    return HttpResponse("")
+
+
 class ForecastView(StaffRequiredMixin, ListView):
     model = Project
-
-    def get_queryset(self):
-        return super().get_queryset().filter(confirmed=True)
+    template_name = "semafor/forecast_all.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_context(
-            context,
-            self.get_queryset(),
-        )
+        return add_projects_context(context)
 
 
 class WorkerForecastView(StaffRequiredMixin, DetailView):
     model = Worker
+    template_name = "semafor/worker_forecast.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_context(
-            context,
-            Project.objects.filter(confirmed=True),
-            worker=self.get_object(),
-        )
+        return add_projects_context(context, worker=self.get_object())
+
+
+class ProjectForecastView(StaffRequiredMixin, DetailView):
+    model = Project
+    template_name = "semafor/project_forecast.html"
+
+    def get_context_data(self, **kwargs):
+        return add_workers_context(self.get_object())
 
 
 class WorkerDedicationView(StaffRequiredMixin, DetailView):
@@ -121,88 +154,105 @@ class CreateWorkerDedicationView(StaffRequiredMixin, CreateView):
     model = WorkerMonthDedication
     fields = ["worker", "year", "month"]
 
+    def post(self, *args, **kwargs):
+        response = super().post(*args, **kwargs)
+        update_forecast_pages(worker=self.object.worker)
+        return response
+
 
 class UpdateWorkerDedicationView(StaffRequiredMixin, UpdateView):
     model = WorkerMonthDedication
     fields = ["dedication"]
     template_name = "fragments/update_dedication.html"
 
+    def post(self, *args, **kwargs):
+        response = super().post(*args, **kwargs)
+        d = self.get_object()
+        update_forecast_pages(worker=d.worker)
+        return response
 
-class ProjectWorkAssignmentView(StaffRequiredMixin, DetailView):
-    model = ProjectWorkAssignment
-    template_name = "fragments/assignment.html"
+
+class WorkForecastView(StaffRequiredMixin, DetailView):
+    model = WorkForecast
+    template_name = "fragments/month_forecast.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return add_total_dedication_context(context, self.object)
 
 
-class CreateProjectWorkAssignmentView(StaffRequiredMixin, CreateView):
-    model = ProjectWorkAssignment
+class CreateWorkForecastView(StaffRequiredMixin, CreateView):
+    model = WorkForecast
     fields = ["worker", "project", "year", "month"]
 
     def get_success_url(self):
-        return reverse("update_project_assignment", args=[self.object.id])
+        return reverse("update_work_forecast", args=[self.object.id])
 
 
-class UpdateProjectWorkAssignmentView(StaffRequiredMixin, UpdateView):
-    model = ProjectWorkAssignment
-    fields = ["assignment"]
-    template_name = "fragments/update_assignment.html"
+class UpdateProjectConfirmedView(StaffRequiredMixin, IgnoreResponseMixin, UpdateView):
+    model = Project
+    fields = ["confirmed"]
 
     def post(self, *args, **kwargs):
         response = super().post(*args, **kwargs)
-        assignment = self.object
-        try:
-            month_dedication = WorkerMonthDedication.objects.get(
-                worker=assignment.worker,
-                year=assignment.year,
-                month=assignment.month,
-            )
-            total_dedication = month_dedication.dedication
-        except WorkerMonthDedication.DoesNotExist:
-            total_dedication = 0
+        update_forecast_pages()
+        return response
 
-        worker_project_td = render_to_string(
-            "fragments/assignment.html",
-            {"object": assignment, "total_dedication": total_dedication},
-        )
 
-        total_worked = 0
-        for a in ProjectWorkAssignment.objects.filter(
-            worker=assignment.worker, year=assignment.year, month=assignment.month
-        ):
-            total_worked += a.assignment
-        worker_total_td = render_to_string(
-            "fragments/assignment_total.html",
-            {
-                "worker": assignment.worker,
-                "year": assignment.year,
-                "month": assignment.month,
-                "total_worked": total_worked,
-                "total_dedication": total_dedication,
-            },
-        )
-        # TODO check there are the proper quantity of sends done
-        print("WORKER PROJECT:", worker_project_td)
-        print("WORKER TOTAL:", worker_total_td)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"assignments_worker_{self.object.worker.uuid}",
-            {
-                "type": "assignment",
-                "worker_project": worker_project_td,
-                "worker_total": worker_total_td,
-            },
-        )
-        # TODO send also project update for global
-        # TODO send also total update for global
-        # async_to_sync(channel_layer.group_send)(
-        #    f"assignments_total",
-        #    {"type": "assignment_total", "project": project_td, "total": total_td},
-        # )
+class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):
+    model = WorkForecast
+    fields = ["forecast"]
+    template_name = "fragments/update_forecast.html"
+
+    def post(self, *args, **kwargs):
+        response = super().post(*args, **kwargs)
+        a = self.get_object()
+        update_forecast_pages(worker=a.worker, project=a.project)
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return add_total_dedication_context(context, self.object)
+
+
+def update_forecast_pages(worker=None, project=None):
+    channel_layer = get_channel_layer()
+
+    if worker:
+        workers = [worker]
+    else:
+        workers = Worker.objects.all()
+
+    for worker in workers:
+        content = render_to_string(
+            "fragments/worker_forecast.html",
+            add_projects_context({"object": worker}, worker=worker),
+        )
+        async_to_sync(channel_layer.group_send)(
+            f"forecast_worker_{worker.uuid}",
+            {"type": "forecast_update", "content": content},
+        )
+
+    if project:
+        projects = [project]
+    else:
+        projects = Project.objects.all()
+
+    for project in projects:
+        content = render_to_string(
+            "fragments/project_forecast.html",
+            add_workers_context(project),
+        )
+        async_to_sync(channel_layer.group_send)(
+            f"forecast_project_{project.uuid}",
+            {"type": "forecast_update", "content": content},
+        )
+
+    content = render_to_string(
+        "fragments/forecast_all.html",
+        add_projects_context({}),
+    )
+    async_to_sync(channel_layer.group_send)(
+        f"forecast_all",
+        {"type": "forecast_update", "content": content},
+    )

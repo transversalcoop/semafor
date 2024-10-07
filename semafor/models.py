@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
 
 MAX_LENGTH = 1000
@@ -38,12 +39,20 @@ class Project(models.Model):
         editable=False,
         primary_key=True,
     )
-    name = models.CharField(max_length=MAX_LENGTH)
-    date_start = models.DateField()
-    date_end = models.DateField()
-    archived = models.BooleanField(default=False)
-    confirmed = models.BooleanField(default=False)
-    income = models.DecimalField(max_digits=10, decimal_places=2)
+    name = models.CharField(max_length=MAX_LENGTH, verbose_name=_("Nom"))
+    date_start = models.DateField(verbose_name=_("Data d'inici"))
+    date_end = models.DateField(verbose_name=_("Data de finalització"))
+    archived = models.BooleanField(
+        default=False, verbose_name=_("Arxivat (s'oculta de totes les pàgines)")
+    )
+    confirmed = models.BooleanField(
+        default=False, verbose_name=_("Confirmat (segur que s'executarà)")
+    )
+    income = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name=_("Ingressos esperats pel total del projecte (en €)"),
+    )
 
     class Meta:
         ordering = ["name"]
@@ -51,23 +60,45 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-    def work_assignments(self, worker=None):
+    def get_absolute_url(self):
+        return reverse("project_forecast", args=[self.uuid])
+
+    def work_forecasts(self, worker=None):
         m = {}
         if worker:
-            assignments = self.projectworkassignment_set.filter(worker=worker)
+            forecasts = self.workforecast_set.filter(worker=worker)
         else:
-            assignments = self.projectworkassignment_set.all()
-        for wa in assignments:
+            forecasts = self.workforecast_set.all()
+        for wa in forecasts:
             m.setdefault((wa.year, wa.month), []).append(wa)
 
         totals, explanations = {}, {}
         for k, was in m.items():
-            totals[k] = sum([x.assignment for x in was])
+            totals[k] = sum(x.forecast for x in was)
             explanations[k] = ", ".join(
-                [f"{x.worker.name} ({x.assignment})" for x in was]
+                [f"{x.worker.name} ({x.forecast})" for x in was]
             )
 
         return totals, explanations
+
+    def compute_forecasted_work(self, worker=None):
+        if worker:
+            forecasts = self.workforecast_set.filter(worker=worker)
+        else:
+            forecasts = self.workforecast_set.all()
+        work = sum(x.forecast for x in forecasts)
+        # TODO set this magic value in the Organization configuration
+        return work / 100 * 2500
+
+    def content_classes(self, worker=None):
+        if worker:
+            forecasts = self.workforecast_set.filter(worker=worker)
+        else:
+            forecasts = self.workforecast_set.all()
+
+        if sum([a.forecast for a in forecasts]) > 0:
+            return "full"
+        return "empty"
 
     def starts(self, year, month):
         return self.starts_pair() == (year, month)
@@ -92,13 +123,20 @@ class Worker(models.Model):
         editable=False,
         primary_key=True,
     )
-    name = models.CharField(max_length=MAX_LENGTH)
+    name = models.CharField(max_length=MAX_LENGTH, verbose_name=_("Nom"))
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+    def content_classes(self):
+        forecasts = self.workforecast_set.all()
+
+        if sum([a.forecast for a in forecasts]) > 0:
+            return "full"
+        return "empty"
 
 
 class WorkerMonthDedication(models.Model):
@@ -127,12 +165,12 @@ class WorkerMonthDedication(models.Model):
         return reverse("worker_dedication", args=[self.id])
 
 
-class ProjectWorkAssignment(models.Model):
+class WorkForecast(models.Model):
     worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
     year = models.IntegerField()
     month = models.IntegerField()
-    assignment = models.IntegerField(
+    forecast = models.IntegerField(
         default=0,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
@@ -141,18 +179,20 @@ class ProjectWorkAssignment(models.Model):
         unique_together = ["worker", "project", "year", "month"]
 
     def __str__(self):
-        return f"{self.worker} - {self.project}: {self.year}-{self.month} {self.assignment}"
+        return (
+            f"{self.worker} - {self.project}: {self.year}-{self.month} {self.forecast}"
+        )
 
     def save(self, *args, **kwargs):
         if (self.year, self.month) < self.project.starts_pair():
             raise Exception("No es pot assignar feina abans del principi del projecte")
         if (self.year, self.month) > self.project.ends_pair():
             raise Exception("No es pot assignar feina després del final del projecte")
-        if self.assignment < 0:
+        if self.forecast < 0:
             raise Exception("Com a mínim cal assignar un 0% de jornada")
-        if self.assignment > 100:
+        if self.forecast > 100:
             raise Exception("Com a màxim es pot assignar un 100% de jornada")
         return super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("project_assignment", args=[self.id])
+        return reverse("work_forecast", args=[self.id])

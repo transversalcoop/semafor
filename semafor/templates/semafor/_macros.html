@@ -25,31 +25,99 @@
 
 {% macro project_classes(project, year, month) %}{% if project.starts(year, month) %} project-starts{% endif %}{% if project.ends(year, month) %} project-ends{% endif %}{% endmacro %}
 
-{% macro projects_table_head(title, time_span, el="th") %}
+{% macro table_head(title, time_span, el="th") %}
 <tr>
-  <th>{{ title }}</th>
+  <td>{{ title }}</td>
   {% for year, month in time_span %}
   <{{ el }} class="text-center">{{ "%02d" % month }}/{{ year }}</{{ el }}>
   {% endfor %}
 </tr>
 {% endmacro %}
 
-{% macro projects_table(projects, time_span, total_worked, total_dedication, worker=None, project_assignments=None, worker_dedications=None, id_prefix="total") %}
-{% for project in projects %}
-<tr>
-  <th class="text-nowrap">{{ project }}</th>
-  {% set totals, explanations = project.work_assignments(worker=worker) %}
+{% macro projects_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=None, project_forecasts=None, worker_dedications=None) %}
+{% for project in projects.filter(confirmed=True) %}
+ {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
+{% endfor %}
+
+<tr class="border-top">
+  <th class="fw-bold">{{ _("Total confirmat") }}</th>
+  {% for year, month in time_span %}
+    {% with total_worked=confirmed_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
+  {% endfor %}
+</tr>
+
+{% if len(projects.filter(confirmed=False)) > 0 %}
+<tr><td>{{ _("Projectes no confirmats") }}</td></tr>
+
+{% for project in projects.filter(confirmed=False) %}
+ {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications, confirmed=False) }}
+{% endfor %}
+
+<tr class="border-top">
+  <th class="fw-bold">{{ _("Total") }}</th>
+  {% for year, month in time_span %}
+    {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
+  {% endfor %}
+</tr>
+{% endif %}
+{% endmacro %}
+
+{% macro toggle_rows_visibility_switches(project=False) %}
+  <div class="form-check form-check-inline form-switch">
+    <input class="form-check-input" type="checkbox" role="switch" id="hideFull" onchange="toggleFull(!event.target.checked)">
+    <label class="form-check-label" for="hideFull">
+      {% if project %}
+      {{ _("Amaga treballadores assignades al projecte") }}
+      {% else %}
+      {{ _("Amaga projectes amb persones assignades") }}
+      {% endif %}
+    </label>
+  </div>
+
+  <div class="form-check form-check-inline form-switch">
+    <input class="form-check-input" type="checkbox" role="switch" id="hideEmpty" onchange="toggleEmpty(!event.target.checked)">
+    <label class="form-check-label" for="hideEmpty">
+      {% if project %}
+      {{ _("Amaga treballadores no assignades al projecte") }}
+      {% else %}
+      {{ _("Amaga projectes sense persones assignades") }}
+      {% endif %}
+    </label>
+  </div>
+{% endmacro %}
+
+{% macro project_row(project, time_span, total_dedication, worker=None, project_forecasts=None, worker_dedications=None, confirmed=True) %}
+<tr class="{{ project.content_classes(worker) }}">
+  <th class="text-nowrap">
+    {% if confirmed %}
+    <i
+      class="bi-chevron-double-down text-danger clickable"
+      hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
+      hx-vals='{"confirmed": false}'
+      hx-include="[name='csrfmiddlewaretoken']"
+    ></i>
+    {% else %}
+    <i
+      class="bi-chevron-double-up text-success clickable"
+      hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
+      hx-vals='{"confirmed": true}'
+      hx-include="[name='csrfmiddlewaretoken']"
+    ></i>
+    {% endif %}
+    <a href="{{ url("project_forecast", args=[project.uuid]) }}">{{ project }}</a>
+  </th>
+  {% set totals, explanations = project.work_forecasts(worker=worker) %}
   {% for year, month in time_span %}
     {% if worker %}
-      {% set pa = project_assignments[project.uuid][(year, month)] %}
+      {% set pa = project_forecasts[project.uuid][(year, month)] %}
       {% if pa %}
-      {% with object = pa, total_dedication = worker_dedications.get((year, month), {}).dedication %}{% include 'fragments/assignment.html' %}{% endwith %}
+      {% with object = pa, total_dedication = worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication %}{% include 'fragments/month_forecast.html' %}{% endwith %}
       {% else %}
         <td
           id="project-{{ project.uuid }}-worker-{{ worker.uuid }}-{{ year }}-{{ month }}"
           class="text-center {% if project.active(year, month) %}clickable{% endif %} {{ project_classes(project, year, month) }}"
           {% if project.active(year, month) %}
-          hx-post="{{ url("create_project_assignment") }}"
+          hx-post="{{ url("create_work_forecast") }}"
           hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}", "project": "{{ project.uuid }}"}'
           hx-include="[name='csrfmiddlewaretoken']"
           hx-swap="outerHTML"
@@ -57,20 +125,33 @@
           ></td>
       {% endif %}
     {% else %}
-      <td
-        title="{% if total_dedication[(year, month)] %}{{ explanations[(year, month)] or "" }}{% else %}No hi ha cap treballador aquest mes!{% endif %}"
-        class="text-center {{ dedication_intensity(totals[(year, month)], total_dedication[(year, month)]) }} {{ project_classes(project, year, month) }}"
-      >
-        {{ totals[(year, month)] or "" }}
-      </td>
+      {% with total_worked=totals[(year, month)], total_dedication=total_dedication[(year, month)], explanation=explanations[(year, month)] %}{% include 'fragments/project_month_forecast.html' %}{% endwith %}
     {% endif %}
   {% endfor %}
 </tr>
+{% endmacro %}
+
+{% macro workers_table(project, workers, time_span, total_worked, worker_dedications, total_dedication) %}
+{% for worker in workers %}
+<tr class="{{ worker.content_classes() }}">
+  <th>
+    <a href="{{ url("worker_forecast", args=[worker.uuid]) }}">{{ worker }}</a>
+  </th>
+  {{ worker_row(project, worker, time_span, worker_dedications) }}
+</tr>
 {% endfor %}
-<tr class="border-top" hx-ext="ws" ws-connect="/ws/{% if worker %}worker/{{ worker.uuid }}{% else %}total{% endif %}/">
-  <th class="fw-bold">Total</th>
+
+<tr class="border-top">
+  <th class="fw-bold">{{ _("Total") }}</th>
   {% for year, month in time_span %}
-    {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/assignment_total.html' %}{% endwith %}
+    {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
   {% endfor %}
 </tr>
+{% endmacro %}
+
+{% macro worker_row(project, worker, time_span, worker_dedications) %}
+  {% set totals, explanations = project.work_forecasts(worker=worker) %}
+  {% for year, month in time_span %}
+    {% with total_worked=totals[(year, month)], total_dedication=worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication, explanation=explanations[(year, month)] %}{% include 'fragments/project_month_forecast.html' %}{% endwith %}
+  {% endfor %}
 {% endmacro %}

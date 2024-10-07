@@ -1,0 +1,37 @@
+{% from 'semafor/_macros.html' import projects_table, table_head, toggle_rows_visibility_switches  %}
+
+<div id="inner-content">
+  <h1>{{ _("Previsió de la treballadora «%(name)s»", name=object.name) }}</h1>
+  <div>
+    <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
+      {{ _("Edita els detalls de la treballadora") }}
+    </a>
+    {{ toggle_rows_visibility_switches() }}
+  </div>
+  <table class="table">
+    <thead>
+      {{ table_head(_("Jornada"), time_span) }}
+    </thead>
+    <tbody>
+      <tr>
+        <th class="text-nowrap">{{ _("Dedicació") }}</th>
+        {% for year, month in time_span %}
+        {% set wd = worker_dedications.get(object.uuid, {})[(year, month)] %}
+          {% if wd %}
+            {% with object = wd %}{% include 'fragments/dedication.html' %}{% endwith %}
+          {% else %}
+          <td
+            class="text-center clickable"
+            hx-post="{{ url("create_worker_dedication") }}"
+            hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ object.uuid }}"}'
+            hx-include="[name='csrfmiddlewaretoken']"
+            hx-swap="outerHTML"
+          ></td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {{ table_head(_("Projectes confirmats"), time_span, el="td") }}
+      {{ projects_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=object, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
+    </tbody>
+  </table>
+</div>
