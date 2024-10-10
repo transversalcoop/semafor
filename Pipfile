@@ -11,6 +11,7 @@ daphne = "*"
 channels-redis = "*"
 babel = "*"
 django-debug-toolbar = "*"
+whitenoise = "*"
 
 [dev-packages]
 

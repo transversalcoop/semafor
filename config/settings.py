@@ -24,6 +24,9 @@ DEBUG = bool(strtobool(os.getenv("DJANGO_DEBUG", "false")))
 allowed_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", ".localhost,127.0.0.1,[::1]")
 ALLOWED_HOSTS = list(map(str.strip, allowed_hosts.split(",")))
 
+allowed_csrf = os.getenv("DJANGO_ALLOWED_CSRF", "http://localhost")
+CSRF_TRUSTED_ORIGINS = list(map(str.strip, allowed_csrf.split(",")))
+
 STAGING_ENVIRONMENT_NAME = os.getenv("DJANGO_STAGING_ENVIRONMENT_NAME", "")
 
 # Quick-start development settings - unsuitable for production
@@ -45,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -147,6 +151,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
