@@ -1,3 +1,5 @@
 run
 db.sqlite3
 static
+Dockerfile.deployable
+.checks.*

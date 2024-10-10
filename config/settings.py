@@ -176,3 +176,17 @@ if DEBUG:
         "10.0.2.2",
         "172.20.0.1",
     ]
+
+# security and deployment checks
+CSRF_COOKIE_SECURE = bool(strtobool(os.getenv("DJANGO_CSRF_COOKIE_SECURE", "true")))
+SESSION_COOKIE_SECURE = bool(
+    strtobool(os.getenv("DJANGO_SESSION_COOKIE_SECURE", "true"))
+)
+CONN_MAX_AGE = int(os.getenv("DJANGO_CONN_MAX_AGE", "0"))
+SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "86400"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = bool(
+    strtobool(os.getenv("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", "true"))
+)
+SECURE_HSTS_PRELOAD = bool(strtobool(os.getenv("DJANGO_SECURE_HSTS_PRELOAD", "true")))
+SECURE_SSL_REDIRECT = bool(strtobool(os.getenv("DJANGO_SECURE_SSL_REDIRECT", "true")))
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
