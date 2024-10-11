@@ -7,10 +7,9 @@
   </div>
   <table class="table">
     <thead>
-      {{ table_head(_("Jornada"), time_span) }}
+      {{ table_head(_("Projectes confirmats"), time_span) }}
     </thead>
     <tbody>
-      {{ table_head(_("Projectes confirmats"), time_span, el="td") }}
       {{ projects_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=object, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
     </tbody>
   </table>

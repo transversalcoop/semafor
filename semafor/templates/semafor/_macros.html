@@ -8,8 +8,8 @@
 
 {% macro workers_menu(request, workers) %}
 <div class="navbar navbar-expand-md bd-navbar">
-  <nav class="container-fluid d-flex justify-content-center" aria-label="Navegació secundària">
-    <ul class="navbar-nav mb-2 mb-lg-0">
+  <nav class="container-fluid d-flex justify-content-start" aria-label="Navegació secundària">
+    <ul class="navbar-nav mb-2 mb-lg-0 navbar-light">
       {% for w in workers %}
       <li class="nav-item">
         {% set link = url("worker_forecast", args=[w.uuid]) %}
@@ -39,7 +39,7 @@
  {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
 {% endfor %}
 
-<tr class="border-top">
+<tr class="border-top-black">
   <th class="fw-bold">{{ _("Total confirmat") }}</th>
   {% for year, month in time_span %}
     {% with total_worked=confirmed_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
@@ -47,13 +47,13 @@
 </tr>
 
 {% if len(projects.filter(confirmed=False)) > 0 %}
-<tr><td>{{ _("Projectes no confirmats") }}</td></tr>
+{{ table_head(_("Projectes no confirmats"), time_span, el="td") }}
 
 {% for project in projects.filter(confirmed=False) %}
  {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications, confirmed=False) }}
 {% endfor %}
 
-<tr class="border-top">
+<tr class="border-top-black">
   <th class="fw-bold">{{ _("Total") }}</th>
   {% for year, month in time_span %}
     {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
@@ -64,12 +64,19 @@
 
 {% macro toggle_rows_visibility_switches(project=False) %}
   <div class="form-check form-check-inline form-switch">
+    <input class="form-check-input" type="checkbox" role="switch" id="showNumbers" onchange="showNumbers(event.target.checked)">
+    <label class="form-check-label" for="showNumbers">
+      {{ _("Mostra els números") }}
+    </label>
+  </div>
+
+  <div class="form-check form-check-inline form-switch">
     <input class="form-check-input" type="checkbox" role="switch" id="hideFull" onchange="toggleFull(!event.target.checked)">
     <label class="form-check-label" for="hideFull">
       {% if project %}
-      {{ _("Amaga treballadores assignades al projecte") }}
+      {{ _("Amaga treballadores del projecte") }}
       {% else %}
-      {{ _("Amaga projectes amb persones assignades") }}
+      {{ _("Amaga projectes amb activitat") }}
       {% endif %}
     </label>
   </div>
@@ -80,7 +87,7 @@
       {% if project %}
       {{ _("Amaga treballadores no assignades al projecte") }}
       {% else %}
-      {{ _("Amaga projectes sense persones assignades") }}
+      {{ _("Amaga projectes buits") }}
       {% endif %}
     </label>
   </div>
@@ -141,7 +148,7 @@
 </tr>
 {% endfor %}
 
-<tr class="border-top">
+<tr class="border-top-black">
   <th class="fw-bold">{{ _("Total") }}</th>
   {% for year, month in time_span %}
     {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
@@ -154,4 +161,20 @@
   {% for year, month in time_span %}
     {% with total_worked=totals[(year, month)], total_dedication=worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication, explanation=explanations[(year, month)] %}{% include 'fragments/project_month_forecast.html' %}{% endwith %}
   {% endfor %}
+{% endmacro %}
+
+{% macro breadcrumb(links) %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    {% for link in links %}
+    <li class="breadcrumb-item {% if loop.last %}active{% endif %}" {% if loop.last %}aria-current="page"{% endif %}>
+      {% if link.href %}
+      <a href="{{ link.href }}">{{ link.name }}</a>
+      {% else %}
+      {{ link.name }}
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
 {% endmacro %}

@@ -66,7 +66,7 @@ class Project(models.Model):
     def work_forecasts(self, worker=None):
         m = {}
         if worker:
-            forecasts = self.workforecast_set.filter(worker=worker)
+            forecasts = [x for x in self.workforecast_set.all() if x.worker == worker]
         else:
             forecasts = self.workforecast_set.all()
         for wa in forecasts:
@@ -92,7 +92,7 @@ class Project(models.Model):
 
     def content_classes(self, worker=None):
         if worker:
-            forecasts = self.workforecast_set.filter(worker=worker)
+            forecasts = (x for x in self.workforecast_set.all() if x.worker == worker)
         else:
             forecasts = self.workforecast_set.all()
 

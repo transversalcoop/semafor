@@ -1,4 +1,11 @@
+import redis
+
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+# TODO extract from settings
+r = redis.Redis(host="redis", port=6379, decode_responses=True)
+r.flushall()
 
 
 # TODO count how many consumers in each group using redis, and don't try to send to a group
@@ -18,9 +25,11 @@ class ForecastConsumer(AsyncWebsocketConsumer):
             self.subscription_group_name, self.channel_name
         )
 
+        await sync_to_async(r.incr)(self.subscription_group_name)
         await self.accept()
 
     async def disconnect(self, close_code):
+        await sync_to_async(r.decr)(self.subscription_group_name)
         await self.channel_layer.group_discard(
             self.subscription_group_name, self.channel_name
         )

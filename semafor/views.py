@@ -1,3 +1,5 @@
+import redis
+
 from django.urls import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -9,7 +11,10 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from semafor.models import Project, Worker, WorkerMonthDedication, WorkForecast
-from semafor.utils import months_range
+from semafor.utils import months_range, parse_int_safe
+
+# TODO extract from settings
+r = redis.Redis(host="redis", port=6379, decode_responses=True)
 
 # Helpers
 
@@ -27,7 +32,9 @@ class IgnoreResponseMixin:
 
 
 def add_projects_context(context, worker=None):
-    projects = Project.objects.filter(archived=False)
+    projects = Project.objects.filter(archived=False).prefetch_related(
+        "workforecast_set__worker"
+    )
     context["projects"] = projects
     context["workers"] = Worker.objects.all()
     dates_start = [x.date_start for x in projects]
@@ -39,11 +46,14 @@ def add_projects_context(context, worker=None):
 
     add_worked(context, projects, worker=worker)
 
+    workforecasts = WorkForecast.objects.all().prefetch_related("project", "worker")
     if worker:
         project_forecasts = {}
         for p in projects:
             project_forecasts[p.uuid] = {}
-            for pa in WorkForecast.objects.filter(project=p, worker=worker):
+            for pa in (
+                x for x in workforecasts if x.project == p and x.worker == worker
+            ):
                 k = (pa.year, pa.month)
                 project_forecasts[p.uuid][k] = pa
 
@@ -71,9 +81,11 @@ def add_dedications(context, worker=None):
     total_dedication = {}
     worker_dedications = {}
     if worker:
-        dedications = WorkerMonthDedication.objects.filter(worker=worker)
+        dedications = WorkerMonthDedication.objects.filter(
+            worker=worker
+        ).prefetch_related("worker")
     else:
-        dedications = WorkerMonthDedication.objects.all()
+        dedications = WorkerMonthDedication.objects.all().prefetch_related("worker")
     for wd in dedications:
         k = (wd.year, wd.month)
         total_dedication.setdefault(k, 0)
@@ -140,6 +152,9 @@ class WorkerForecastView(StaffRequiredMixin, DetailView):
 class ProjectForecastView(StaffRequiredMixin, DetailView):
     model = Project
     template_name = "semafor/project_forecast.html"
+
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related("workforecast_set__worker")
 
     def get_context_data(self, **kwargs):
         return add_workers_context(self.get_object())
@@ -215,6 +230,9 @@ class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):
         return add_total_dedication_context(context, self.object)
 
 
+# TODO better performance for rendering those templates; django debug toolbar does not know how many
+# db requests are made
+# TODO maybe also to this update in a thread, so the response to the post is not delayed
 def update_forecast_pages(worker=None, project=None):
     channel_layer = get_channel_layer()
 
@@ -223,36 +241,49 @@ def update_forecast_pages(worker=None, project=None):
     else:
         workers = Worker.objects.all()
 
-    for worker in workers:
-        content = render_to_string(
-            "fragments/worker_forecast.html",
-            add_projects_context({"object": worker}, worker=worker),
-        )
-        async_to_sync(channel_layer.group_send)(
-            f"forecast_worker_{worker.uuid}",
-            {"type": "forecast_update", "content": content},
-        )
-
     if project:
         projects = [project]
     else:
         projects = Project.objects.all()
 
+    subscription_groups = (
+        [f"forecast_worker_{worker.uuid}" for worker in workers]
+        + [f"forecast_project_{project.uuid}" for project in projects]
+        + ["forecast_all"]
+    )
+    counts = [parse_int_safe(x) for x in r.mget(subscription_groups)]
+    group_counts = dict(zip(subscription_groups, counts))
+
+    for worker in workers:
+        group = f"forecast_worker_{worker.uuid}"
+        if group_counts[group] > 0:
+            content = render_to_string(
+                "fragments/worker_forecast.html",
+                add_projects_context({"object": worker}, worker=worker),
+            )
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {"type": "forecast_update", "content": content},
+            )
+
     for project in projects:
+        group = f"forecast_project_{project.uuid}"
+        if group_counts[group] > 0:
+            content = render_to_string(
+                "fragments/project_forecast.html",
+                add_workers_context(project),
+            )
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {"type": "forecast_update", "content": content},
+            )
+
+    if group_counts["forecast_all"] > 0:
         content = render_to_string(
-            "fragments/project_forecast.html",
-            add_workers_context(project),
+            "fragments/forecast_all.html",
+            add_projects_context({}),
         )
         async_to_sync(channel_layer.group_send)(
-            f"forecast_project_{project.uuid}",
+            f"forecast_all",
             {"type": "forecast_update", "content": content},
         )
-
-    content = render_to_string(
-        "fragments/forecast_all.html",
-        add_projects_context({}),
-    )
-    async_to_sync(channel_layer.group_send)(
-        f"forecast_all",
-        {"type": "forecast_update", "content": content},
-    )

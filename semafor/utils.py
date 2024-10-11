@@ -39,3 +39,10 @@ def yes_no(b):
     if b:
         return _("Sí")
     return _("No")
+
+
+def parse_int_safe(x):
+    try:
+        return int(x)
+    except:
+        return 0

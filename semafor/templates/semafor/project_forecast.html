@@ -1,9 +1,13 @@
 {% extends "semafor/base.html" %}
 
-{% from 'semafor/_macros.html' import workers_menu %}
+{% from 'semafor/_macros.html' import workers_menu, breadcrumb %}
 
 {% block submenu %}
 {{ workers_menu(request, workers) }}
+{% endblock %}
+
+{% block breadcrumb %}
+{{ breadcrumb([{"name": _("Previsió"), "href": url("forecast")}, {"name": _("Projectes")}, {"name": object.name}]) }}
 {% endblock %}
 
 {% block content %}
