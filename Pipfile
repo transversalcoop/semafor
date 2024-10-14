@@ -12,6 +12,7 @@ channels-redis = "*"
 babel = "*"
 django-debug-toolbar = "*"
 whitenoise = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
