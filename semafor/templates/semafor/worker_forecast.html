@@ -1,10 +1,9 @@
 {% extends "semafor/base.html" %}
 
-{% from 'semafor/_macros.html' import workers_menu, breadcrumb %}
+{% from 'semafor/_macros.html' import workers_menu, breadcrumb, shortcuts_menu, shortcuts_modal, shortcuts_js %}
 
-{% block submenu %}
-{{ workers_menu(request, workers) }}
-{% endblock %}
+{% block submenu %}{{ workers_menu(request, workers) }}{% endblock %}
+{% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
 {% block breadcrumb %}
 {{ breadcrumb([{"name": _("Previsió"), "href": url("forecast")}, {"name": _("Treballadores")}, {"name": object.name}]) }}
@@ -14,4 +13,10 @@
 {{ csrf_input }}
 {% include 'fragments/worker_forecast.html' %}
 <div hx-ext="ws" ws-connect="/ws/forecast/worker/{{ object.uuid }}/"></div>
+{{ shortcuts_modal() }}
 {% endblock %}
+
+{% block js %}
+{{ shortcuts_js() }}
+{% endblock %}
+

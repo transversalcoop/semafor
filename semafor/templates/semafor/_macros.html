@@ -62,37 +62,6 @@
 {% endif %}
 {% endmacro %}
 
-{% macro toggle_rows_visibility_switches(project=False) %}
-  <div class="form-check form-check-inline form-switch">
-    <input class="form-check-input" type="checkbox" role="switch" id="showNumbers" onchange="showNumbers(event.target.checked)">
-    <label class="form-check-label" for="showNumbers">
-      {{ _("Mostra els números") }}
-    </label>
-  </div>
-
-  <div class="form-check form-check-inline form-switch">
-    <input class="form-check-input" type="checkbox" role="switch" id="hideFull" onchange="toggleFull(!event.target.checked)">
-    <label class="form-check-label" for="hideFull">
-      {% if project %}
-      {{ _("Amaga treballadores del projecte") }}
-      {% else %}
-      {{ _("Amaga projectes amb activitat") }}
-      {% endif %}
-    </label>
-  </div>
-
-  <div class="form-check form-check-inline form-switch">
-    <input class="form-check-input" type="checkbox" role="switch" id="hideEmpty" onchange="toggleEmpty(!event.target.checked)">
-    <label class="form-check-label" for="hideEmpty">
-      {% if project %}
-      {{ _("Amaga treballadores no assignades al projecte") }}
-      {% else %}
-      {{ _("Amaga projectes buits") }}
-      {% endif %}
-    </label>
-  </div>
-{% endmacro %}
-
 {% macro project_row(project, time_span, total_dedication, worker=None, project_forecasts=None, worker_dedications=None, confirmed=True) %}
 <tr class="{{ project.content_classes(worker) }}">
   <th class="text-nowrap">
@@ -140,7 +109,7 @@
 
 {% macro workers_table(project, workers, time_span, total_worked, worker_dedications, total_dedication) %}
 {% for worker in workers %}
-<tr class="{{ worker.content_classes() }}">
+<tr class="{{ worker.content_classes(project) }}">
   <th>
     <a href="{{ url("worker_forecast", args=[worker.uuid]) }}">{{ worker }}</a>
   </th>
@@ -178,3 +147,94 @@
   </ol>
 </nav>
 {% endmacro %}
+
+{% macro shortcuts_menu() %}
+<li class="nav-item">
+  <a type="button" data-bs-toggle="modal" data-bs-target="#shortcutsModal">
+    <i class="bi-gear-fill white"></i>
+  </a>
+</li>
+{% endmacro %}
+
+{% macro shortcuts_modal() %}
+<div class="modal fade" id="shortcutsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ _("Dreceres de teclat") }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _("Tanca") }}"></button>
+      </div>
+      <div class="modal-body">
+        <dl>
+          <dt><code>?</code></dt>
+          <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
+          <dt><code>ctrl + 1</code></dt>
+          <dd>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="showNumbers(event.target.checked)">
+              <label class="form-check-label" for="showNumbersSwitch">
+                {{ _("Mostra i amaga els números de la taula") }}
+              </label>
+            </div>
+          </dd>
+          <dt><code>ctrl + 2</code></dt>
+          <dd>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="hideEmptySwitch" onchange="toggleEmpty(!event.target.checked)">
+              <label class="form-check-label" for="hideEmptySwitch">
+                {{ _("Amaga files sense cap valor") }}
+              </label>
+            </div>
+          </dd>
+          <dt><code>ctrl + 3</code></dt>
+          <dd>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="hideFullSwitch" onchange="toggleFull(!event.target.checked)">
+              <label class="form-check-label" for="hideFullSwitch">
+                {{ _("Amaga files amb algun valor") }}
+              </label>
+            </div>
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro shortcuts_js() %}
+const shortcutsModal = new bootstrap.Modal("#shortcutsModal")
+const showNumbersSwitch = document.getElementById("showNumbersSwitch")
+const hideEmptySwitch = document.getElementById("hideEmptySwitch")
+const hideFullSwitch = document.getElementById("hideFullSwitch")
+
+var ctrlDown = false;
+const ctrlKey = 17,
+      key1 = 49,
+      key2 = 50,
+      key3 = 51,
+      questionKey = 222;
+
+document.addEventListener("keydown", (e) => {
+  if (e.keyCode == ctrlKey) ctrDown = true;
+})
+
+document.addEventListener("keyup", (e) => {
+  if (e.keyCode == ctrlKey)     ctrDown = false;
+  if (e.keyCode == questionKey) shortcutsModal.show();
+
+  if (ctrlKey && e.keyCode == key1) {
+    showNumbersSwitch.checked = !showNumbersSwitch.checked;
+    showNumbers(showNumbersSwitch.checked);
+  }
+  if (ctrlKey && e.keyCode == key2) {
+    hideEmptySwitch.checked = !hideEmptySwitch.checked;
+    toggleEmpty(!hideEmptySwitch.checked);
+  }
+  if (ctrlKey && e.keyCode == key3) {
+    hideFullSwitch.checked = !hideFullSwitch.checked;
+    toggleFull(!hideFullSwitch.checked);
+  }
+})
+{% endmacro %}
+

@@ -212,3 +212,8 @@ table.table th a:hover {
 .columns-3 {
   columns: 3;
 }
+
+.white {
+  color: white;
+}
+

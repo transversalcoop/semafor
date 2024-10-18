@@ -1,4 +1,4 @@
-{% from 'semafor/_macros.html' import projects_table, table_head, toggle_rows_visibility_switches  %}
+{% from 'semafor/_macros.html' import projects_table, table_head %}
 
 <div id="inner-content">
   <h1>{{ _("Previsió de la treballadora «%(name)s»", name=object.name) }}</h1>
@@ -6,7 +6,6 @@
     <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls de la treballadora") }}
     </a>
-    {{ toggle_rows_visibility_switches() }}
   </div>
   <table class="table">
     <thead>

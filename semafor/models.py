@@ -131,8 +131,11 @@ class Worker(models.Model):
     def __str__(self):
         return self.name
 
-    def content_classes(self):
-        forecasts = self.workforecast_set.all()
+    def content_classes(self, project=None):
+        if project:
+            forecasts = (x for x in self.workforecast_set.all() if x.project == project)
+        else:
+            forecasts = self.workforecast_set.all()
 
         if sum([a.forecast for a in forecasts]) > 0:
             return "full"

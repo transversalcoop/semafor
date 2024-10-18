@@ -1,4 +1,4 @@
-{% from 'semafor/_macros.html' import workers_table, table_head, toggle_rows_visibility_switches  %}
+{% from 'semafor/_macros.html' import workers_table, table_head %}
 
 <div id="inner-content">
   <h1>{{ _("Previsió del projecte «%(name)s»", name=object.name) }}</h1>
@@ -6,7 +6,6 @@
     <a href="{{ url("admin:semafor_project_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls del projecte") }}
     </a>
-    {{ toggle_rows_visibility_switches(project=True) }}
   </div>
   <ul class="columns-3">
     <li><strong>{{ _("Comença:") }}</strong> {{ localize(object.date_start) }}</li>
@@ -25,5 +24,4 @@
     </tbody>
   </table>
 </div>
-
 

@@ -1,10 +1,7 @@
-{% from 'semafor/_macros.html' import projects_table, table_head, toggle_rows_visibility_switches  %}
+{% from 'semafor/_macros.html' import projects_table, table_head %}
 
 <div id="inner-content">
   <h1>{{ _("Previsió") }}</h1>
-  <div>
-    {{ toggle_rows_visibility_switches() }}
-  </div>
   <table class="table">
     <thead>
       {{ table_head(_("Projectes confirmats"), time_span) }}
