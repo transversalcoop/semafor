@@ -1,18 +1,18 @@
 {% macro nav_link(request, title, link) %}
 <li class="nav-item">
-  <a class="nav-link {% if link_active(request, link) %}active{% endif %}" aria-current="page" href="{{ link }}">
+  <a class="nav-link white {% if link_active(request, link) %}active{% endif %}" aria-current="page" href="{{ link }}">
     {{ title }}
   </a>
 </li>
 {% endmacro %}
 
-{% macro workers_menu(request, workers) %}
+{% macro workers_menu(request, workers, url_name) %}
 <div class="navbar navbar-expand-md bd-navbar">
   <nav class="container-fluid d-flex justify-content-start" aria-label="Navegació secundària">
     <ul class="navbar-nav mb-2 mb-lg-0 navbar-light">
       {% for w in workers %}
       <li class="nav-item">
-        {% set link = url("worker_forecast", args=[w.uuid]) %}
+        {% set link = url(url_name, args=[w.uuid]) %}
         <a class="nav-link {% if link_active(request, link, exact=True) %}active{% endif %}" aria-current="page" href="{{ link }}">
           {{ w.name }}
         </a>
@@ -34,7 +34,7 @@
 </tr>
 {% endmacro %}
 
-{% macro projects_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=None, project_forecasts=None, worker_dedications=None) %}
+{% macro projects_forecast_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=None, project_forecasts=None, worker_dedications=None) %}
 {% for project in projects.filter(confirmed=True) %}
  {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
 {% endfor %}
@@ -168,7 +168,7 @@
         <dl>
           <dt><code>?</code></dt>
           <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
-          <dt><code>ctrl + 1</code></dt>
+          <dt><code>n</code></dt>
           <dd>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="showNumbers(event.target.checked)">
@@ -177,21 +177,30 @@
               </label>
             </div>
           </dd>
-          <dt><code>ctrl + 2</code></dt>
+          <dt><code>b</code></dt>
           <dd>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="hideEmptySwitch" onchange="toggleEmpty(!event.target.checked)">
               <label class="form-check-label" for="hideEmptySwitch">
-                {{ _("Amaga files sense cap valor") }}
+                {{ _("Amaga files buides (sense cap valor)") }}
               </label>
             </div>
           </dd>
-          <dt><code>ctrl + 3</code></dt>
+          <dt><code>p</code></dt>
           <dd>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="hideFullSwitch" onchange="toggleFull(!event.target.checked)">
               <label class="form-check-label" for="hideFullSwitch">
-                {{ _("Amaga files amb algun valor") }}
+                {{ _("Amaga files plenes (amb algun valor)") }}
+              </label>
+            </div>
+          </dd>
+          <dt><code>m</code></dt>
+          <dd>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="smallFontSwitch" onchange="toggleSmallFont(event.target.checked)">
+              <label class="form-check-label" for="smallFontSwitch">
+                {{ _("Fes menuda la lletra") }}
               </label>
             </div>
           </dd>
@@ -213,6 +222,10 @@ const ctrlKey = 17,
       key1 = 49,
       key2 = 50,
       key3 = 51,
+      keyb = 66,
+      keyp = 80,
+      keym = 77,
+      keyn = 78,
       questionKey = 222;
 
 document.addEventListener("keydown", (e) => {
@@ -223,17 +236,21 @@ document.addEventListener("keyup", (e) => {
   if (e.keyCode == ctrlKey)     ctrDown = false;
   if (e.keyCode == questionKey) shortcutsModal.show();
 
-  if (ctrlKey && e.keyCode == key1) {
+  if (e.keyCode == keyn) {
     showNumbersSwitch.checked = !showNumbersSwitch.checked;
     showNumbers(showNumbersSwitch.checked);
   }
-  if (ctrlKey && e.keyCode == key2) {
+  if (e.keyCode == keyb) {
     hideEmptySwitch.checked = !hideEmptySwitch.checked;
     toggleEmpty(!hideEmptySwitch.checked);
   }
-  if (ctrlKey && e.keyCode == key3) {
+  if (e.keyCode == keyp) {
     hideFullSwitch.checked = !hideFullSwitch.checked;
     toggleFull(!hideFullSwitch.checked);
+  }
+  if (e.keyCode == keym) {
+    smallFontSwitch.checked = !smallFontSwitch.checked;
+    toggleSmallFont(smallFontSwitch.checked);
   }
 })
 {% endmacro %}

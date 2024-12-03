@@ -2,13 +2,15 @@
 
 {% from 'semafor/_macros.html' import workers_menu, shortcuts_menu, shortcuts_modal, shortcuts_js %}
 
-{% block submenu %}{{ workers_menu(request, workers, "worker_forecast") }}{% endblock %}
+{% block submenu %}{{ workers_menu(request, workers, "worker_assessment") }}{% endblock %}
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
 {% block content %}
-{{ csrf_input }}
-{% include 'fragments/forecast_all.html' %}
-<div hx-ext="ws" ws-connect="/ws/forecast/total/"></div>
+<form hx-encoding="multipart/form-data" hx-post="{{ url("update_worker_assessment", args=[object.uuid]) }}">
+  {{ csrf_input }}
+  <input type="file" name="checks_file">
+  <input type="submit" value="Envia">
+</form>
 {{ shortcuts_modal() }}
 {% endblock %}
 

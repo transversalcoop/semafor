@@ -5,8 +5,8 @@ import semafor.views as views
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("ignore", views.ignore, name="ignore"),
-    path("forecast", views.ForecastView.as_view(), name="forecast"),
+    path("ignore/", views.ignore, name="ignore"),
+    path("forecast/", views.ForecastView.as_view(), name="forecast"),
     path(
         "forecast/worker/<uuid:pk>/",
         views.WorkerForecastView.as_view(),
@@ -17,12 +17,23 @@ urlpatterns = [
         views.ProjectForecastView.as_view(),
         name="project_forecast",
     ),
-    path("liquidity", views.index, name="liquidity"),  # TODO
-    path("assessment", views.index, name="assessment"),  # TODO
-    path("assessment/worker/<uuid:pk>/", views.index, name="worker_assessment"),  # TODO
+    path("assessment/", views.AssessmentView.as_view(), name="assessment"),
     path(
-        "assessment/project/<uuid:pk>/", views.index, name="project_assessment"
-    ),  # TODO
+        "assessment/worker/<uuid:pk>/",
+        views.WorkerAssessmentView.as_view(),
+        name="worker_assessment",
+    ),
+    path(
+        "assessment/worker/<uuid:pk>/update/",
+        views.update_worker_assessment,
+        name="update_worker_assessment",
+    ),
+    path(
+        "assessment/project/<uuid:pk>/",
+        views.ProjectAssessmentView.as_view(),
+        name="project_assessment",
+    ),
+    path("liquidity", views.index, name="liquidity"),  # TODO
     path(
         "worker/dedication/create/",
         views.CreateWorkerDedicationView.as_view(),

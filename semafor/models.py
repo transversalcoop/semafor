@@ -199,3 +199,24 @@ class WorkForecast(models.Model):
 
     def get_absolute_url(self):
         return reverse("work_forecast", args=[self.id])
+
+
+class WorkAssessment(models.Model):
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.PROTECT)
+    year = models.IntegerField()
+    month = models.IntegerField()
+    assessment = models.DurationField()
+
+    class Meta:
+        unique_together = ["worker", "project", "year", "month"]
+
+    def __str__(self):
+        return f"{self.worker} - {self.project}: {self.year}-{self.month} {self.assessment}"
+
+    def save(self, *args, **kwargs):
+        if (self.year, self.month) < self.project.starts_pair():
+            raise Exception("No es pot assignar feina abans del principi del projecte")
+        if (self.year, self.month) > self.project.ends_pair():
+            raise Exception("No es pot assignar feina després del final del projecte")
+        return super().save(*args, **kwargs)

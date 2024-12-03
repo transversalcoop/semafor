@@ -24,7 +24,7 @@
     <link href="{{ static("style.css") }}" rel="stylesheet">
     <title>Semàfor</title>
   </head>
-  <body
+  <body id="body"
   {# TODO does not work well with websockets, as explained here https://www.reddit.com/r/htmx/comments/1ckskb0/issue_with_hxboosttrue_and_websockets_extension/
   Put again if problem gets fixed in ws.js
   {% if not settings.DEBUG %}hx-boost="true"{% endif %} #}
@@ -47,9 +47,9 @@
           </a>
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             {{ nav_link(request, _("Previsió"), url("forecast")) }}
+            {{ nav_link(request, _("Avaluació"), url("assessment")) }}
             {# TODO
             {{ nav_link(request, _("Liquiditat"), url("liquidity")) }}
-            {{ nav_link(request, _("Avaluació"), url("assessment")) }}
             #}
           </ul>
 
@@ -111,6 +111,13 @@ function showNumbers(show) {
     document.getElementById("content").classList.add("show-numbers");
   } else {
     document.getElementById("content").classList.remove("show-numbers");
+  }
+}
+function toggleSmallFont(small) {
+  if (small) {
+    document.getElementById("body").classList.add("tight");
+  } else {
+    document.getElementById("body").classList.remove("tight");
   }
 }
 {% block js %}{% endblock %}

@@ -31,18 +31,22 @@ class IgnoreResponseMixin:
         return reverse("ignore")
 
 
-def add_projects_context(context, worker=None):
-    projects = Project.objects.filter(archived=False).prefetch_related(
-        "workforecast_set__worker"
-    )
-    context["projects"] = projects
-    context["workers"] = Worker.objects.all()
+def add_time_span(context, projects):
     dates_start = [x.date_start for x in projects]
     dates_end = [x.date_end for x in projects]
     if len(dates_start) > 0:
         date_start = min(dates_start)
         date_end = max(dates_end)
         context["time_span"] = list(months_range(date_start, date_end))
+
+
+def add_projects_forecast_context(context, worker=None):
+    projects = Project.objects.filter(archived=False).prefetch_related(
+        "workforecast_set__worker"
+    )
+    context["projects"] = projects
+    context["workers"] = Worker.objects.all()
+    add_time_span(context, projects)
 
     add_worked(context, projects, worker=worker)
 
@@ -75,6 +79,14 @@ def add_worked(context, projects, worker=None):
                 confirmed_worked[k] += v
     context["confirmed_worked"] = confirmed_worked
     context["total_worked"] = total_worked
+
+
+def add_projects_assessment_context(context, worker=None):
+    projects = Project.objects.filter(archived=False)
+    context["workers"] = Worker.objects.all()
+    context["projects"] = Worker.objects.all()
+    add_time_span(context, projects)
+    return context
 
 
 def add_dedications(context, worker=None):
@@ -137,7 +149,7 @@ class ForecastView(StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_context(context)
+        return add_projects_forecast_context(context)
 
 
 class WorkerForecastView(StaffRequiredMixin, DetailView):
@@ -146,7 +158,7 @@ class WorkerForecastView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_context(context, worker=self.get_object())
+        return add_projects_forecast_context(context, worker=self.get_object())
 
 
 class ProjectForecastView(StaffRequiredMixin, DetailView):
@@ -230,6 +242,39 @@ class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):
         return add_total_dedication_context(context, self.object)
 
 
+class AssessmentView(StaffRequiredMixin, ListView):
+    model = Project
+    template_name = "semafor/assessment_all.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return add_projects_assessment_context(context)
+
+
+class WorkerAssessmentView(StaffRequiredMixin, DetailView):
+    model = Worker
+    template_name = "semafor/worker_assessment.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return add_projects_assessment_context(context, worker=self.get_object())
+
+
+class ProjectAssessmentView(StaffRequiredMixin, DetailView):
+    model = Project
+    template_name = "semafor/project_assessment.html"
+
+
+# TODO implement well
+def update_worker_assessment(request, pk):
+    if request.method == "POST":
+        print(request.FILES)
+
+    return render(
+        request, "semafor/update_worker_assessment.html", {"checks_count": 42}
+    )
+
+
 # TODO better performance for rendering those templates; django debug toolbar does not know how many
 # db requests are made
 # TODO maybe also to this update in a thread, so the response to the post is not delayed
@@ -259,7 +304,7 @@ def update_forecast_pages(worker=None, project=None):
         if group_counts[group] > 0:
             content = render_to_string(
                 "fragments/worker_forecast.html",
-                add_projects_context({"object": worker}, worker=worker),
+                add_projects_forecast_context({"object": worker}, worker=worker),
             )
             async_to_sync(channel_layer.group_send)(
                 group,
@@ -281,7 +326,7 @@ def update_forecast_pages(worker=None, project=None):
     if group_counts["forecast_all"] > 0:
         content = render_to_string(
             "fragments/forecast_all.html",
-            add_projects_context({}),
+            add_projects_forecast_context({}),
         )
         async_to_sync(channel_layer.group_send)(
             f"forecast_all",

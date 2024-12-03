@@ -2,6 +2,14 @@ body, wrapper {
   min-height: 100vh;
 }
 
+body.tight table.table {
+  font-size: 12px;
+}
+
+body.tight .table > :not(caption) > * > * {
+  padding: 0.1rem;
+}
+
 h1 {
   font-weight: 600;
   text-align: center;
@@ -214,6 +222,6 @@ table.table th a:hover {
 }
 
 .white {
-  color: white;
+  color: white !important;
 }
 

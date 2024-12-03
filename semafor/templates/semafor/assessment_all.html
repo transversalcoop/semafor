@@ -2,13 +2,12 @@
 
 {% from 'semafor/_macros.html' import workers_menu, shortcuts_menu, shortcuts_modal, shortcuts_js %}
 
-{% block submenu %}{{ workers_menu(request, workers, "worker_forecast") }}{% endblock %}
+{% block submenu %}{{ workers_menu(request, workers, "worker_assessment") }}{% endblock %}
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
 {% block content %}
 {{ csrf_input }}
-{% include 'fragments/forecast_all.html' %}
-<div hx-ext="ws" ws-connect="/ws/forecast/total/"></div>
+{% include 'fragments/assessment_all.html' %}
 {{ shortcuts_modal() }}
 {% endblock %}
 
