@@ -1,7 +1,7 @@
-{% from 'semafor/_macros.html' import workers_forecast_table, table_head, project_details %}
+{% from 'semafor/_macros.html' import workers_assessment_table, table_head, project_details %}
 
 <div id="inner-content">
-  <h1>{{ _("Previsió del projecte «%(name)s»", name=object.name) }}</h1>
+  <h1>{{ _("Avaluació del projecte «%(name)s»", name=object.name) }}</h1>
   <div>
     <a href="{{ url("admin:semafor_project_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls del projecte") }}
@@ -13,8 +13,9 @@
       {{ table_head(_("Treballadores"), time_span) }}
     </thead>
     <tbody>
-      {{ workers_forecast_table(object, workers, time_span, total_worked, worker_dedications, total_dedication) }}
+      {{ workers_assessment_table(object, workers, time_span, total_worked) }}
     </tbody>
   </table>
 </div>
+
 

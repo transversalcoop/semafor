@@ -1,4 +1,8 @@
 import redis
+import sqlite3
+import tempfile
+
+from datetime import timedelta
 
 from django.urls import reverse
 from django.http import HttpResponse
@@ -10,7 +14,13 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from semafor.models import Project, Worker, WorkerMonthDedication, WorkForecast
+from semafor.models import (
+    Project,
+    Worker,
+    WorkerMonthDedication,
+    WorkForecast,
+    WorkAssessment,
+)
 from semafor.utils import months_range, parse_int_safe
 
 # TODO extract from settings
@@ -48,7 +58,7 @@ def add_projects_forecast_context(context, worker=None):
     context["workers"] = Worker.objects.all()
     add_time_span(context, projects)
 
-    add_worked(context, projects, worker=worker)
+    add_worked_forecast(context, projects, worker=worker)
 
     workforecasts = WorkForecast.objects.all().prefetch_related("project", "worker")
     if worker:
@@ -67,7 +77,7 @@ def add_projects_forecast_context(context, worker=None):
     return context
 
 
-def add_worked(context, projects, worker=None):
+def add_worked_forecast(context, projects, worker=None):
     confirmed_worked, total_worked = {}, {}
     for p in projects:
         totals, _ = p.work_forecasts(worker=worker)
@@ -82,11 +92,36 @@ def add_worked(context, projects, worker=None):
 
 
 def add_projects_assessment_context(context, worker=None):
-    projects = Project.objects.filter(archived=False)
+    projects = Project.objects.filter(archived=False, confirmed=True)
     context["workers"] = Worker.objects.all()
-    context["projects"] = Worker.objects.all()
+    context["projects"] = projects
     add_time_span(context, projects)
+    add_worked_assessment(context, projects, worker=worker)
+
+    workassessments = WorkAssessment.objects.all().prefetch_related("project", "worker")
+    if worker:
+        project_assessments = {}
+        for p in projects:
+            project_assessments[p.uuid] = {}
+            for pa in (
+                x for x in workassessments if x.project == p and x.worker == worker
+            ):
+                k = (pa.year, pa.month)
+                project_assessments[p.uuid][k] = pa
+
+        context["project_assessments"] = project_assessments
+
     return context
+
+
+def add_worked_assessment(context, projects, worker=None):
+    total_worked = {}
+    for p in projects:
+        totals, _ = p.work_assessments(worker=worker)
+        for k, v in totals.items():
+            total_worked.setdefault(k, timedelta(0))
+            total_worked[k] += v
+    context["total_worked"] = total_worked
 
 
 def add_dedications(context, worker=None):
@@ -109,12 +144,20 @@ def add_dedications(context, worker=None):
     context["worker_dedications"] = worker_dedications
 
 
-def add_workers_context(project):
+def add_workers_forecast_context(project):
     context = {"object": project}
     context["time_span"] = list(months_range(project.date_start, project.date_end))
     context["workers"] = Worker.objects.all()
-    add_worked(context, [project])
+    add_worked_forecast(context, [project])
     add_dedications(context)
+    return context
+
+
+def add_workers_assessment_context(project):
+    context = {"object": project}
+    context["time_span"] = list(months_range(project.date_start, project.date_end))
+    context["workers"] = Worker.objects.all()
+    add_worked_assessment(context, [project])
     return context
 
 
@@ -169,7 +212,7 @@ class ProjectForecastView(StaffRequiredMixin, DetailView):
         return super().get_queryset().prefetch_related("workforecast_set__worker")
 
     def get_context_data(self, **kwargs):
-        return add_workers_context(self.get_object())
+        return add_workers_forecast_context(self.get_object())
 
 
 class WorkerDedicationView(StaffRequiredMixin, DetailView):
@@ -201,7 +244,7 @@ class UpdateWorkerDedicationView(StaffRequiredMixin, UpdateView):
 
 class WorkForecastView(StaffRequiredMixin, DetailView):
     model = WorkForecast
-    template_name = "fragments/month_forecast.html"
+    template_name = "fragments/worker_month_forecast.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -264,11 +307,23 @@ class ProjectAssessmentView(StaffRequiredMixin, DetailView):
     model = Project
     template_name = "semafor/project_assessment.html"
 
+    def get_context_data(self, **kwargs):
+        return add_workers_assessment_context(self.get_object())
+
 
 # TODO implement well
 def update_worker_assessment(request, pk):
     if request.method == "POST":
         print(request.FILES)
+
+    with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+        fp.write(request.FILES["checks_file"].read())
+        fp.close()
+
+        db = sqlite3.connect(fp.name)
+        cur = db.cursor()
+        cur.execute("SELECT COUNT(1) FROM checks;")
+        print("CHECKS COUNT:", cur.fetchone()[0])
 
     return render(
         request, "semafor/update_worker_assessment.html", {"checks_count": 42}
@@ -316,7 +371,7 @@ def update_forecast_pages(worker=None, project=None):
         if group_counts[group] > 0:
             content = render_to_string(
                 "fragments/project_forecast.html",
-                add_workers_context(project),
+                add_workers_forecast_context(project),
             )
             async_to_sync(channel_layer.group_send)(
                 group,

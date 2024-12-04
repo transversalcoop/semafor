@@ -1,17 +1,29 @@
 {% extends "semafor/base.html" %}
 
-{% from 'semafor/_macros.html' import workers_menu, shortcuts_menu, shortcuts_modal, shortcuts_js %}
+{% from 'semafor/_macros.html' import workers_menu, breadcrumb, shortcuts_menu, shortcuts_modal, shortcuts_js, modal_start, modal_end %}
 
 {% block submenu %}{{ workers_menu(request, workers, "worker_assessment") }}{% endblock %}
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
+{% block breadcrumb %}
+{{ breadcrumb([{"name": _("Avaluació"), "href": url("assessment")}, {"name": _("Treballadores")}, {"name": object.name}]) }}
+{% endblock %}
+
 {% block content %}
-<form hx-encoding="multipart/form-data" hx-post="{{ url("update_worker_assessment", args=[object.uuid]) }}">
-  {{ csrf_input }}
-  <input type="file" name="checks_file">
-  <input type="submit" value="Envia">
-</form>
+  <a type="button" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+    {{ _("Actualitza les dades de control horari") }}
+  </a>
+{% include 'fragments/worker_assessment.html' %}
 {{ shortcuts_modal() }}
+
+{{ modal_start("uploadFileModal", _("Actualitza les dades de control horari")) }}
+TODO fer que el formulari i la resposta vinguen donats per la view update_worker_assessment, i que ixe contingut s'agafe amb hx-trigger="shown.bs.modal"
+  <form hx-encoding="multipart/form-data" hx-post="{{ url("update_worker_assessment", args=[object.uuid]) }}">
+    {{ csrf_input }}
+    <input type="file" name="checks_file">
+    <input type="submit" value="Envia">
+  </form>
+{{ modal_end() }}
 {% endblock %}
 
 {% block js %}

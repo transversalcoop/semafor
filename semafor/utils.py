@@ -46,3 +46,13 @@ def parse_int_safe(x):
         return int(x)
     except:
         return 0
+
+
+def format_duration(d):
+    if not d:
+        return ""
+    seconds = int(d.total_seconds())
+    hours = seconds // 3600
+    minutes = (seconds // 60) % 60
+    seconds = seconds % 60
+    return f"{hours}:{minutes:02}:{seconds:02}"

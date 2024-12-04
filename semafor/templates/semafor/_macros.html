@@ -36,7 +36,7 @@
 
 {% macro projects_forecast_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=None, project_forecasts=None, worker_dedications=None) %}
 {% for project in projects.filter(confirmed=True) %}
- {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
+ {{ project_forecast_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
 {% endfor %}
 
 <tr class="border-top-black">
@@ -50,7 +50,7 @@
 {{ table_head(_("Projectes no confirmats"), time_span, el="td") }}
 
 {% for project in projects.filter(confirmed=False) %}
- {{ project_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications, confirmed=False) }}
+ {{ project_forecast_row(project, time_span, total_dedication, worker=worker, project_forecasts=project_forecasts, worker_dedications=worker_dedications, confirmed=False) }}
 {% endfor %}
 
 <tr class="border-top-black">
@@ -62,8 +62,8 @@
 {% endif %}
 {% endmacro %}
 
-{% macro project_row(project, time_span, total_dedication, worker=None, project_forecasts=None, worker_dedications=None, confirmed=True) %}
-<tr class="{{ project.content_classes(worker) }}">
+{% macro project_forecast_row(project, time_span, total_dedication, worker=None, project_forecasts=None, worker_dedications=None, confirmed=True) %}
+<tr class="{{ project.forecast_content_classes(worker) }}">
   <th class="text-nowrap">
     {% if confirmed %}
     <i
@@ -87,7 +87,7 @@
     {% if worker %}
       {% set pa = project_forecasts[project.uuid][(year, month)] %}
       {% if pa %}
-      {% with object = pa, total_dedication = worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication %}{% include 'fragments/month_forecast.html' %}{% endwith %}
+      {% with object = pa, total_dedication = worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication %}{% include 'fragments/worker_month_forecast.html' %}{% endwith %}
       {% else %}
         <td
           id="project-{{ project.uuid }}-worker-{{ worker.uuid }}-{{ year }}-{{ month }}"
@@ -107,29 +107,95 @@
 </tr>
 {% endmacro %}
 
-{% macro workers_table(project, workers, time_span, total_worked, worker_dedications, total_dedication) %}
-{% for worker in workers %}
-<tr class="{{ worker.content_classes(project) }}">
-  <th>
-    <a href="{{ url("worker_forecast", args=[worker.uuid]) }}">{{ worker }}</a>
-  </th>
-  {{ worker_row(project, worker, time_span, worker_dedications) }}
-</tr>
-{% endfor %}
-
-<tr class="border-top-black">
-  <th class="fw-bold">{{ _("Total") }}</th>
-  {% for year, month in time_span %}
-    {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
+{% macro workers_forecast_table(project, workers, time_span, total_worked, worker_dedications, total_dedication) %}
+  {% for worker in workers %}
+  <tr class="{{ worker.forecast_content_classes(project) }}">
+    <th>
+      <a href="{{ url("worker_forecast", args=[worker.uuid]) }}">{{ worker }}</a>
+    </th>
+    {{ worker_forecast_row(project, worker, time_span, worker_dedications) }}
+  </tr>
   {% endfor %}
-</tr>
+
+  <tr class="border-top-black">
+    <th class="fw-bold">{{ _("Total") }}</th>
+    {% for year, month in time_span %}
+      {% with total_worked=total_worked[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
+    {% endfor %}
+  </tr>
 {% endmacro %}
 
-{% macro worker_row(project, worker, time_span, worker_dedications) %}
+{% macro worker_forecast_row(project, worker, time_span, worker_dedications) %}
   {% set totals, explanations = project.work_forecasts(worker=worker) %}
   {% for year, month in time_span %}
     {% with total_worked=totals[(year, month)], total_dedication=worker_dedications.get(worker.uuid, {}).get((year, month), {}).dedication, explanation=explanations[(year, month)] %}{% include 'fragments/project_month_forecast.html' %}{% endwith %}
   {% endfor %}
+{% endmacro %}
+
+{% macro workers_assessment_table(project, workers, time_span, total_worked) %}
+  {% for worker in workers %}
+  <tr class="{{ worker.assessment_content_classes(project) }}">
+    <th>
+      <a href="{{ url("worker_assessment", args=[worker.uuid]) }}">{{ worker }}</a>
+    </th>
+    {{ worker_assessment_row(project, worker, time_span) }}
+  </tr>
+  {% endfor %}
+
+  <tr class="border-top-black">
+    <th class="fw-bold">{{ _("Total") }}</th>
+    {% for year, month in time_span %}
+      {% with total_worked=total_worked[(year, month)] %}
+        {% include 'fragments/assessment_total.html' %}
+      {% endwith %}
+    {% endfor %}
+  </tr>
+{% endmacro %}
+
+{% macro worker_assessment_row(project, worker, time_span) %}
+  {% set totals, explanations = project.work_assessments(worker=worker) %}
+  {% for year, month in time_span %}
+    {% with total_worked=totals[(year, month)], explanation=explanations[(year, month)] %}
+      {% include 'fragments/project_month_assessment.html' %}
+    {% endwith %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro projects_assessment_table(projects, time_span, total_worked, worker=None, project_assessments=None) %}
+  {% for project in projects %}
+    {{ project_assessment_row(project, time_span, total_worked, worker=worker, project_assessments=project_assessments) }}
+  {% endfor %}
+
+  <tr class="border-top-black">
+    <th class="fw-bold">{{ _("Total") }}</th>
+    {% for year, month in time_span %}
+      {% set worked = total_worked[(year, month)] %}
+      <td class="text-center {{ dedication_intensity(worked, worked) }}">{{ format_duration(worked) }}</td>
+    {% endfor %}
+  </tr>
+{% endmacro %}
+
+{% macro project_assessment_row(project, time_span, total_worked, worker=None, project_assessments=None) %}
+<tr class="{{ project.assessment_content_classes(worker) }}">
+  <th class="text-nowrap">
+    <a href="{{ url("project_assessment", args=[project.uuid]) }}">{{ project }}</a>
+  </th>
+  {% set totals, explanations = project.work_assessments(worker=worker) %}
+  {% for year, month in time_span %}
+    {% if worker %}
+      {% set pa = project_assessments.get(project.uuid, {}).get((year, month)) %}
+      {% if pa %}
+        {% with object = pa, total_worked=total_worked[(year, month)] %}{% include 'fragments/worker_month_assessment.html' %}{% endwith %}
+      {% else %}
+        <td class="text-center {{ project_classes(project, year, month) }}"></td>
+      {% endif %}
+    {% else %}
+      {% with total_worked=totals[(year, month)], explanation=explanations[(year, month)] %}
+        {% include 'fragments/project_month_assessment.html' %}
+      {% endwith %}
+    {% endif %}
+  {% endfor %}
+</tr>
 {% endmacro %}
 
 {% macro breadcrumb(links) %}
@@ -157,54 +223,62 @@
 {% endmacro %}
 
 {% macro shortcuts_modal() %}
-<div class="modal fade" id="shortcutsModal" tabindex="-1">
+  {{ modal_start("shortcutsModal", _("Dreceres de teclat")) }}
+  <dl>
+    <dt><code>?</code></dt>
+    <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
+    <dt><code>n</code></dt>
+    <dd>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="showNumbers(event.target.checked)">
+        <label class="form-check-label" for="showNumbersSwitch">
+          {{ _("Mostra i amaga els números de la taula") }}
+        </label>
+      </div>
+    </dd>
+    <dt><code>b</code></dt>
+    <dd>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="hideEmptySwitch" onchange="toggleEmpty(!event.target.checked)">
+        <label class="form-check-label" for="hideEmptySwitch">
+          {{ _("Amaga files buides (sense cap valor)") }}
+        </label>
+      </div>
+    </dd>
+    <dt><code>p</code></dt>
+    <dd>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="hideFullSwitch" onchange="toggleFull(!event.target.checked)">
+        <label class="form-check-label" for="hideFullSwitch">
+          {{ _("Amaga files plenes (amb algun valor)") }}
+        </label>
+      </div>
+    </dd>
+    <dt><code>m</code></dt>
+    <dd>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="smallFontSwitch" onchange="toggleSmallFont(event.target.checked)">
+        <label class="form-check-label" for="smallFontSwitch">
+          {{ _("Fes menuda la lletra") }}
+        </label>
+      </div>
+    </dd>
+  </dl>
+  {{ modal_end() }}
+{% endmacro %}
+
+{% macro modal_start(id, title) %}
+<div class="modal fade" id="{{ id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{{ _("Dreceres de teclat") }}</h5>
+        <h5 class="modal-title">{{ title }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _("Tanca") }}"></button>
       </div>
       <div class="modal-body">
-        <dl>
-          <dt><code>?</code></dt>
-          <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
-          <dt><code>n</code></dt>
-          <dd>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="showNumbers(event.target.checked)">
-              <label class="form-check-label" for="showNumbersSwitch">
-                {{ _("Mostra i amaga els números de la taula") }}
-              </label>
-            </div>
-          </dd>
-          <dt><code>b</code></dt>
-          <dd>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="hideEmptySwitch" onchange="toggleEmpty(!event.target.checked)">
-              <label class="form-check-label" for="hideEmptySwitch">
-                {{ _("Amaga files buides (sense cap valor)") }}
-              </label>
-            </div>
-          </dd>
-          <dt><code>p</code></dt>
-          <dd>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="hideFullSwitch" onchange="toggleFull(!event.target.checked)">
-              <label class="form-check-label" for="hideFullSwitch">
-                {{ _("Amaga files plenes (amb algun valor)") }}
-              </label>
-            </div>
-          </dd>
-          <dt><code>m</code></dt>
-          <dd>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="smallFontSwitch" onchange="toggleSmallFont(event.target.checked)">
-              <label class="form-check-label" for="smallFontSwitch">
-                {{ _("Fes menuda la lletra") }}
-              </label>
-            </div>
-          </dd>
-        </dl>
+{% endmacro %}
+
+{% macro modal_end() %}
       </div>
     </div>
   </div>
@@ -255,3 +329,13 @@ document.addEventListener("keyup", (e) => {
 })
 {% endmacro %}
 
+{% macro project_details(project) %}
+  <ul class="columns-3">
+    <li><strong>{{ _("Comença:") }}</strong> {{ localize(project.date_start) }}</li>
+    <li><strong>{{ _("Acaba:") }}</strong> {{ localize(project.date_end) }}</li>
+    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ project.income }}€</li>
+    <li><strong>{{ _("Treball previst:") }}</strong> {{ project.compute_forecasted_work() }}€</li>
+    <li><strong>{{ _("Confirmat:") }}</strong> {{ yes_no(project.confirmed) }}</li>
+    <li><strong>{{ _("Arxivat:") }}</strong> {{ yes_no(project.archived) }}</li>
+  </ul>
+{% endmacro %}

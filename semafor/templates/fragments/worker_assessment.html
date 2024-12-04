@@ -1,0 +1,18 @@
+{% from 'semafor/_macros.html' import projects_assessment_table, table_head %}
+
+<div id="inner-content">
+  <h1>{{ _("Avaluació de la treballadora «%(name)s»", name=object.name) }}</h1>
+  <div>
+    <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
+      {{ _("Edita els detalls de la treballadora") }}
+    </a>
+  </div>
+  <table class="table">
+    <thead>
+      {{ table_head(_("Projectes"), time_span) }}
+    </thead>
+    <tbody>
+      {{ projects_assessment_table(projects, time_span, total_worked, worker=object, project_assessments=project_assessments) }}
+    </tbody>
+  </table>
+</div>

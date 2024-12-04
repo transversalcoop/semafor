@@ -1,13 +1,14 @@
-{% from 'semafor/_macros.html' import table_head %}
+{% from 'semafor/_macros.html' import table_head, projects_assessment_table %}
 
 <div id="inner-content">
   <h1>{{ _("Avaluació") }}</h1>
+  TODO FIX apareix tot en roig, hauria d'apareixer en verd algunes coses
   <table class="table">
     <thead>
       {{ table_head(_("Projectes"), time_span) }}
     </thead>
     <tbody>
-      TODO similar a projects_forecast_table
+      {{ projects_assessment_table(projects, time_span, total_worked, worker=worker, project_assessments=project_assessments) }}
     </tbody>
   </table>
 </div>

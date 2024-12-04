@@ -1,5 +1,7 @@
 import uuid
 
+from datetime import timedelta
+
 from django.db import models
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -81,6 +83,26 @@ class Project(models.Model):
 
         return totals, explanations
 
+    def work_assessments(self, worker=None):
+        m = {}
+        if worker:
+            assessments = [
+                x for x in self.workassessment_set.all() if x.worker == worker
+            ]
+        else:
+            assessments = self.workassessment_set.all()
+        for a in assessments:
+            m.setdefault((a.year, a.month), []).append(a)
+
+        totals, explanations = {}, {}
+        for k, was in m.items():
+            totals[k] = sum((x.assessment for x in was), start=timedelta(0))
+            explanations[k] = ", ".join(
+                [f"{x.worker.name} ({x.assessment})" for x in was]
+            )
+
+        return totals, explanations
+
     def compute_forecasted_work(self, worker=None):
         if worker:
             forecasts = self.workforecast_set.filter(worker=worker)
@@ -90,13 +112,25 @@ class Project(models.Model):
         # TODO set this magic value in the Organization configuration
         return work / 100 * 2500
 
-    def content_classes(self, worker=None):
+    def forecast_content_classes(self, worker=None):
         if worker:
             forecasts = (x for x in self.workforecast_set.all() if x.worker == worker)
         else:
             forecasts = self.workforecast_set.all()
 
         if sum([a.forecast for a in forecasts]) > 0:
+            return "full"
+        return "empty"
+
+    def assessment_content_classes(self, worker=None):
+        if worker:
+            assessments = (
+                x for x in self.workassessment_set.all() if x.worker == worker
+            )
+        else:
+            assessments = self.workassessment_set.all()
+
+        if sum((a.assessment for a in assessments), start=timedelta(0)) > timedelta(0):
             return "full"
         return "empty"
 
@@ -131,13 +165,25 @@ class Worker(models.Model):
     def __str__(self):
         return self.name
 
-    def content_classes(self, project=None):
+    def forecast_content_classes(self, project=None):
         if project:
             forecasts = (x for x in self.workforecast_set.all() if x.project == project)
         else:
             forecasts = self.workforecast_set.all()
 
         if sum([a.forecast for a in forecasts]) > 0:
+            return "full"
+        return "empty"
+
+    def assessment_content_classes(self, project=None):
+        if project:
+            assessments = (
+                x for x in self.workassessment_set.all() if x.project == project
+            )
+        else:
+            assessments = self.workassessment_set.all()
+
+        if sum((a.assessment for a in assessments), start=timedelta(0)) > timedelta(0):
             return "full"
         return "empty"
 
