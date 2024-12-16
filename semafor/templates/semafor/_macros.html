@@ -138,7 +138,7 @@
     <th>
       <a href="{{ url("worker_assessment", args=[worker.uuid]) }}">{{ worker }}</a>
     </th>
-    {{ worker_assessment_row(project, worker, time_span) }}
+    {{ worker_assessment_row(project, worker, time_span, total_worked) }}
   </tr>
   {% endfor %}
 
@@ -152,10 +152,10 @@
   </tr>
 {% endmacro %}
 
-{% macro worker_assessment_row(project, worker, time_span) %}
+{% macro worker_assessment_row(project, worker, time_span, total_worked) %}
   {% set totals, explanations = project.work_assessments(worker=worker) %}
   {% for year, month in time_span %}
-    {% with total_worked=totals[(year, month)], explanation=explanations[(year, month)] %}
+    {% with worked=totals[(year, month)], total_worked=total_worked[(year, month)], explanation=explanations[(year, month)] %}
       {% include 'fragments/project_month_assessment.html' %}
     {% endwith %}
   {% endfor %}
@@ -190,7 +190,7 @@
         <td class="text-center {{ project_classes(project, year, month) }}"></td>
       {% endif %}
     {% else %}
-      {% with total_worked=totals[(year, month)], explanation=explanations[(year, month)] %}
+      {% with worked=totals[(year, month)], total_worked=total_worked[(year, month)], explanation=explanations[(year, month)] %}
         {% include 'fragments/project_month_assessment.html' %}
       {% endwith %}
     {% endif %}
