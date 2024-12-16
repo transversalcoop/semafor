@@ -8,12 +8,11 @@ r = redis.Redis(host="redis", port=6379, decode_responses=True)
 r.flushall()
 
 
-# TODO count how many consumers in each group using redis, and don't try to send to a group
-# unless there are consumers in that group
 class ForecastConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.worker_id = self.scope["url_route"]["kwargs"].get("worker_id")
         self.project_id = self.scope["url_route"]["kwargs"].get("project_id")
+
         if self.worker_id:
             self.subscription_group_name = f"forecast_worker_{self.worker_id}"
         elif self.project_id:

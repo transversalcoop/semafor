@@ -1,6 +1,7 @@
 import redis
 import sqlite3
 import tempfile
+import threading
 
 from datetime import timedelta
 
@@ -332,58 +333,61 @@ def update_worker_assessment(request, pk):
 
 # TODO better performance for rendering those templates; django debug toolbar does not know how many
 # db requests are made
-# TODO maybe also to this update in a thread, so the response to the post is not delayed
 def update_forecast_pages(worker=None, project=None):
-    channel_layer = get_channel_layer()
+    def f(worker, project):
+        channel_layer = get_channel_layer()
 
-    if worker:
-        workers = [worker]
-    else:
-        workers = Worker.objects.all()
+        if worker:
+            workers = [worker]
+        else:
+            workers = Worker.objects.all()
 
-    if project:
-        projects = [project]
-    else:
-        projects = Project.objects.all()
+        if project:
+            projects = [project]
+        else:
+            projects = Project.objects.all()
 
-    subscription_groups = (
-        [f"forecast_worker_{worker.uuid}" for worker in workers]
-        + [f"forecast_project_{project.uuid}" for project in projects]
-        + ["forecast_all"]
-    )
-    counts = [parse_int_safe(x) for x in r.mget(subscription_groups)]
-    group_counts = dict(zip(subscription_groups, counts))
+        subscription_groups = (
+            [f"forecast_worker_{worker.uuid}" for worker in workers]
+            + [f"forecast_project_{project.uuid}" for project in projects]
+            + ["forecast_all"]
+        )
+        counts = [parse_int_safe(x) for x in r.mget(subscription_groups)]
+        group_counts = dict(zip(subscription_groups, counts))
 
-    for worker in workers:
-        group = f"forecast_worker_{worker.uuid}"
-        if group_counts[group] > 0:
+        for worker in workers:
+            group = f"forecast_worker_{worker.uuid}"
+            if group_counts[group] > 0:
+                content = render_to_string(
+                    "fragments/worker_forecast.html",
+                    add_projects_forecast_context({"object": worker}, worker=worker),
+                )
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {"type": "forecast_update", "content": content},
+                )
+
+        for project in projects:
+            group = f"forecast_project_{project.uuid}"
+            if group_counts[group] > 0:
+                content = render_to_string(
+                    "fragments/project_forecast.html",
+                    add_workers_forecast_context(project),
+                )
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {"type": "forecast_update", "content": content},
+                )
+
+        if group_counts["forecast_all"] > 0:
             content = render_to_string(
-                "fragments/worker_forecast.html",
-                add_projects_forecast_context({"object": worker}, worker=worker),
+                "fragments/forecast_all.html",
+                add_projects_forecast_context({}),
             )
             async_to_sync(channel_layer.group_send)(
-                group,
+                f"forecast_all",
                 {"type": "forecast_update", "content": content},
             )
 
-    for project in projects:
-        group = f"forecast_project_{project.uuid}"
-        if group_counts[group] > 0:
-            content = render_to_string(
-                "fragments/project_forecast.html",
-                add_workers_forecast_context(project),
-            )
-            async_to_sync(channel_layer.group_send)(
-                group,
-                {"type": "forecast_update", "content": content},
-            )
-
-    if group_counts["forecast_all"] > 0:
-        content = render_to_string(
-            "fragments/forecast_all.html",
-            add_projects_forecast_context({}),
-        )
-        async_to_sync(channel_layer.group_send)(
-            f"forecast_all",
-            {"type": "forecast_update", "content": content},
-        )
+    # TODO do it with something cheaper than a thread? async?
+    threading.Thread(target=f, args=[worker, project]).start()
