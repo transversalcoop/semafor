@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from django.urls import reverse
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.template.loader import render_to_string
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -312,23 +312,40 @@ class ProjectAssessmentView(StaffRequiredMixin, DetailView):
         return add_workers_assessment_context(self.get_object())
 
 
-# TODO implement well
 def update_worker_assessment(request, pk):
+    worker = get_object_or_404(Worker, pk=pk)
     if request.method == "POST":
-        print(request.FILES)
+        try:
+            with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+                fp.write(request.FILES["checks_file"].read())
+                fp.close()
 
-    with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
-        fp.write(request.FILES["checks_file"].read())
-        fp.close()
+                update_worker_assessments(worker, fp.name)
 
-        db = sqlite3.connect(fp.name)
-        cur = db.cursor()
-        cur.execute("SELECT COUNT(1) FROM checks;")
-        print("CHECKS COUNT:", cur.fetchone()[0])
+            return render(
+                request,
+                "fragments/update_worker_assessment.html",
+                {"ok": True, "object": worker},
+            )
+        except Exception:
+            return render(
+                request,
+                "fragments/update_worker_assessment.html",
+                {"error": True, "object": worker},
+            )
 
     return render(
-        request, "semafor/update_worker_assessment.html", {"checks_count": 42}
+        request, "fragments/update_worker_assessment.html", {"object": worker}
     )
+
+
+# TODO implement
+def update_worker_assessments(worker, dbfile):
+    WorkAssessment.objects.filter(worker=worker).delete()
+    db = sqlite3.connect(dbfile)
+    cur = db.cursor()
+    cur.execute("SELECT COUNT(1) FROM checks;")
+    print("CHECKS COUNT:", cur.fetchone()[0])
 
 
 # TODO better performance for rendering those templates; django debug toolbar does not know how many
