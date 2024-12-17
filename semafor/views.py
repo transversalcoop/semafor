@@ -1,5 +1,4 @@
 import redis
-import sqlite3
 import tempfile
 import threading
 
@@ -7,9 +6,11 @@ from datetime import timedelta
 
 from django.urls import reverse
 from django.http import HttpResponse
+from django.conf import settings
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views.generic import DetailView, ListView, CreateView, UpdateView
 from django.template.loader import render_to_string
+from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 from asgiref.sync import async_to_sync
@@ -21,11 +22,16 @@ from semafor.models import (
     WorkerMonthDedication,
     WorkForecast,
     WorkAssessment,
+    OutOfBoundsException,
 )
 from semafor.utils import months_range, parse_int_safe
+from semafor.time_control import ControlHorari
 
-# TODO extract from settings
-r = redis.Redis(host="redis", port=6379, decode_responses=True)
+r = redis.Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    decode_responses=True,
+)
 
 # Helpers
 
@@ -320,14 +326,25 @@ def update_worker_assessment(request, pk):
                 fp.write(request.FILES["checks_file"].read())
                 fp.close()
 
-                update_worker_assessments(worker, fp.name)
+                missing_projects, errors = update_worker_assessments(worker, fp.name)
+                if len(missing_projects) > 0 or len(errors) > 0:
+                    return render(
+                        request,
+                        "fragments/update_worker_assessment.html",
+                        {
+                            "missing_projects": missing_projects,
+                            "errors": errors,
+                            "object": worker,
+                        },
+                    )
 
             return render(
                 request,
                 "fragments/update_worker_assessment.html",
                 {"ok": True, "object": worker},
             )
-        except Exception:
+        except Exception as ex:
+            print("EXCEPTION:", ex)
             return render(
                 request,
                 "fragments/update_worker_assessment.html",
@@ -339,13 +356,36 @@ def update_worker_assessment(request, pk):
     )
 
 
-# TODO implement
 def update_worker_assessments(worker, dbfile):
     WorkAssessment.objects.filter(worker=worker).delete()
-    db = sqlite3.connect(dbfile)
-    cur = db.cursor()
-    cur.execute("SELECT COUNT(1) FROM checks;")
-    print("CHECKS COUNT:", cur.fetchone()[0])
+    projects = ControlHorari(dbfile).get_projects_worked_time()
+    db_projects, missing_projects = {}, set()
+    for k in projects:
+        try:
+            project = Project.objects.get(name=k)
+            db_projects[k] = project
+        except Project.DoesNotExist:
+            missing_projects.add(k)
+
+    errors = []
+    if len(missing_projects) == 0:
+        for pname, assessments in projects.items():
+            project = db_projects[pname]
+            for assessment in assessments:
+                year = assessment["year"]
+                month = assessment["month"]
+                try:
+                    WorkAssessment.objects.create(
+                        worker=worker,
+                        project=project,
+                        year=year,
+                        month=month,
+                        assessment=assessment["worked_time"],
+                    )
+                except OutOfBoundsException as ex:
+                    errors.append(f"{project.name} ({year}-{month:02}): {ex}")
+
+    return missing_projects, errors
 
 
 # TODO better performance for rendering those templates; django debug toolbar does not know how many

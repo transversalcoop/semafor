@@ -10,6 +10,24 @@
   {% if error %}
   <p>{{ _("No s'han pogut actualitzar les dades. Per favor, envia un arxiu correcte") }}</p>
   {% endif %}
+  {% if errors %}
+    <p>{{ _("Hi ha hagut errors actualitzant les dades:") }}</p>
+    <ul>
+    {% for err in errors %}
+      <li>{{ err }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+  {% if missing_projects %}
+  <p>
+    {{ _("Els següents projectes no es corresponen a projectes existents a l'aplicació:") }}
+  </p>
+  <ul>
+    {% for p in missing_projects %}
+    <li>{{ p }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 
   <form
     hx-encoding="multipart/form-data"
@@ -17,7 +35,7 @@
     hx-target="closest div"
   >
     {{ csrf_input }}
-    <input type="file" name="checks_file">
-    <input type="submit" value="Envia">
+    <input type="file" name="checks_file" class="form-control">
+    <button type="submit" class="btn btn-dark float-end mt-3">{{ _("Envia") }}</button>
   </form>
 {% endif %}

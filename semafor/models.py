@@ -22,7 +22,6 @@ class User(AbstractUser):
 #        "Organization", related_name="authorized_users"
 #    )
 #
-#
 # class Organization(models.Model):
 #    uuid = models.UUIDField(
 #        default=uuid.uuid4,
@@ -33,6 +32,7 @@ class User(AbstractUser):
 #    worker_monthly_cost = models.DecimalField(max_digits=10, decimal_places=2)
 # inside Project
 #    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+#    unique index [organization, name]
 
 
 class Project(models.Model):
@@ -205,9 +205,11 @@ class WorkerMonthDedication(models.Model):
 
     def save(self, *args, **kwargs):
         if self.dedication < 0:
-            raise Exception("Com a mínim pot haver una dedicació d'un 0% de jornada")
+            raise Exception(_("Com a mínim pot haver una dedicació d'un 0% de jornada"))
         if self.dedication > 100:
-            raise Exception("Com a màxim pot haver una dedicació d'un 100% de jornada")
+            raise Exception(
+                _("Com a màxim pot haver una dedicació d'un 100% de jornada")
+            )
         return super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -234,17 +236,25 @@ class WorkForecast(models.Model):
 
     def save(self, *args, **kwargs):
         if (self.year, self.month) < self.project.starts_pair():
-            raise Exception("No es pot assignar feina abans del principi del projecte")
+            raise Exception(
+                _("No es pot assignar feina abans del principi del projecte")
+            )
         if (self.year, self.month) > self.project.ends_pair():
-            raise Exception("No es pot assignar feina després del final del projecte")
+            raise Exception(
+                _("No es pot assignar feina després del final del projecte")
+            )
         if self.forecast < 0:
-            raise Exception("Com a mínim cal assignar un 0% de jornada")
+            raise Exception(_("Com a mínim cal assignar un 0% de jornada"))
         if self.forecast > 100:
-            raise Exception("Com a màxim es pot assignar un 100% de jornada")
+            raise Exception(_("Com a màxim es pot assignar un 100% de jornada"))
         return super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse("work_forecast", args=[self.id])
+
+
+class OutOfBoundsException(Exception):
+    pass
 
 
 class WorkAssessment(models.Model):
@@ -262,7 +272,11 @@ class WorkAssessment(models.Model):
 
     def save(self, *args, **kwargs):
         if (self.year, self.month) < self.project.starts_pair():
-            raise Exception("No es pot assignar feina abans del principi del projecte")
+            raise OutOfBoundsException(
+                _("No es pot assignar feina abans del principi del projecte")
+            )
         if (self.year, self.month) > self.project.ends_pair():
-            raise Exception("No es pot assignar feina després del final del projecte")
+            raise OutOfBoundsException(
+                _("No es pot assignar feina després del final del projecte")
+            )
         return super().save(*args, **kwargs)

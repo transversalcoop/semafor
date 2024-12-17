@@ -1,0 +1,102 @@
+import sqlite3
+import datetime
+
+from datetime import timedelta
+
+
+# This class handles files coming from the following mobile APP:
+# https://play.google.com/store/apps/details?id=org.transversalcoop.control_horari
+class ControlHorari:
+    TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
+    MIX_HOURS_NAME = "Popurri"
+    STRUCTURAL_NAME = "Estructural: altres"
+
+    def __init__(self, dbfile):
+        self.db = sqlite3.connect(dbfile)
+        self.cur = self.db.cursor()
+
+    def get_projects_worked_time(self):
+        self.discard_dangling_checks()
+        self.get_check_types_names()
+
+        all_projects = {}
+        for i in range(1, 13):
+            # TODO do all months demanded by user
+            projects = self.get_month_projects_worked_time(f"2024-{i:02}")
+            for k, v in projects.items():
+                all_projects.setdefault(k, []).append(
+                    {
+                        "year": 2024,
+                        "month": i,
+                        "worked_time": v,
+                    }
+                )
+
+        return all_projects
+
+    def discard_dangling_checks(self):
+        sql = "SELECT check_type_id FROM checks ORDER BY timestamp DESC LIMIT 1;"
+        self.cur.execute(sql)
+        while self.cur.fetchone()[0] is not None:
+            self.cur.execute("DELETE FROM checks ORDER BY timestamp DESC LIMIT 1;")
+            self.cur.execute(sql)
+
+    def get_check_types_names(self):
+        self.check_types = {}
+        for row in self.cur.execute("SELECT id, name FROM check_types;"):
+            id, name = row
+            self.check_types[id] = name
+
+    def get_month_projects_worked_time(self, date_str):
+        sql = """SELECT timestamp, check_type_id, multiplier FROM checks
+                 WHERE timestamp LIKE ? ORDER BY timestamp ASC;"""
+        lst = []
+        try:
+            for row in self.cur.execute(sql, [date_str + "-%"]):
+                lst.append(
+                    (
+                        datetime.datetime.strptime(row[0], self.TIME_FORMAT),
+                        row[1],
+                        row[2],
+                    )
+                )
+        except:
+            sql = """SELECT timestamp, check_type_id FROM checks
+                     WHERE timestamp LIKE ? ORDER BY timestamp ASC;"""
+            for row in self.cur.execute(sql, [date_str + "-%"]):
+                lst.append(
+                    (datetime.datetime.strptime(row[0], self.TIME_FORMAT), row[1], 100)
+                )
+
+        projects = {}
+        for i in range(len(lst) - 1):
+            s, e = lst[i], lst[i + 1]
+            if s[1]:
+                k = self.check_types[s[1]]
+                if k in projects.keys():
+                    projects[k] += (e[0] - s[0]) * s[2] / 100
+                else:
+                    projects[k] = (e[0] - s[0]) * s[2] / 100
+
+        return self.distribute_mix_hours(projects)
+
+    def distribute_mix_hours(self, projects):
+        total, mix_time = datetime.timedelta(), datetime.timedelta()
+        for key in projects.keys():
+            if key == self.MIX_HOURS_NAME:
+                mix_time = projects[key]
+            total += projects[key]
+
+        if mix_time == datetime.timedelta():
+            return projects
+        if mix_time == total:  # if all is mix, we assume Estructural
+            return {self.STRUCTURAL_NAME: total}
+
+        mix_fraction = mix_time / total
+        multiplier = 1 / (1 - mix_fraction)
+        new_projects = {}
+        for key in projects.keys():
+            if key != self.MIX_HOURS_NAME:
+                new_projects[key] = projects[key] * multiplier
+
+        return new_projects
