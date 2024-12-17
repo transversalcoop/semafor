@@ -33,7 +33,8 @@ urlpatterns = [
         views.ProjectAssessmentView.as_view(),
         name="project_assessment",
     ),
-    path("liquidity", views.index, name="liquidity"),  # TODO
+    path("liquidity", views.LiquidityView.as_view(), name="liquidity"),
+    path("liquidity/upload/", views.upload_liquidity, name="upload_liquidity"),
     path(
         "worker/dedication/create/",
         views.CreateWorkerDedicationView.as_view(),

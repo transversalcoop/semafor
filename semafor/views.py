@@ -22,10 +22,12 @@ from semafor.models import (
     WorkerMonthDedication,
     WorkForecast,
     WorkAssessment,
+    Transaction,
     OutOfBoundsException,
 )
 from semafor.utils import months_range, parse_int_safe
 from semafor.time_control import ControlHorari
+from semafor.banking import RuralVia
 
 r = redis.Redis(
     host=settings.REDIS_HOST,
@@ -99,7 +101,9 @@ def add_worked_forecast(context, projects, worker=None):
 
 
 def add_projects_assessment_context(context, worker=None):
-    projects = Project.objects.filter(archived=False, confirmed=True)
+    projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
+        "workassessment_set__worker"
+    )
     context["workers"] = Worker.objects.all()
     context["projects"] = projects
     add_time_span(context, projects)
@@ -318,6 +322,29 @@ class ProjectAssessmentView(StaffRequiredMixin, DetailView):
         return add_workers_assessment_context(self.get_object())
 
 
+class LiquidityView(StaffRequiredMixin, ListView):
+    model = Transaction
+    template_name = "semafor/liquidity.html"
+
+
+def upload_liquidity(request):
+    if request.method == "POST":
+        try:
+            with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+                fp.write(request.FILES["transactions_file"].read())
+                fp.close()
+
+                Transaction.objects.all().delete()
+                for t in RuralVia(fp.name).get_transactions():
+                    t.save()
+
+            return render(request, "fragments/upload_liquidity.html", {"ok": True})
+        except Exception as ex:
+            print("EXCEPTION:", ex)
+
+    return render(request, "fragments/upload_liquidity.html", {})
+
+
 def update_worker_assessment(request, pk):
     worker = get_object_or_404(Worker, pk=pk)
     if request.method == "POST":
@@ -344,7 +371,6 @@ def update_worker_assessment(request, pk):
                 {"ok": True, "object": worker},
             )
         except Exception as ex:
-            print("EXCEPTION:", ex)
             return render(
                 request,
                 "fragments/update_worker_assessment.html",

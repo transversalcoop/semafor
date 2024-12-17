@@ -290,3 +290,45 @@ class WorkAssessment(models.Model):
                 _("No es pot assignar feina després del final del projecte")
             )
         return super().save(*args, **kwargs)
+
+
+class Tag(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        primary_key=True,
+    )
+    name = models.CharField(max_length=MAX_LENGTH)
+
+
+class Transaction(models.Model):
+    id = models.IntegerField(primary_key=True)
+    date = models.DateField()
+    concept = models.CharField(max_length=MAX_LENGTH)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
+
+    tags = models.ManyToManyField(Tag, related_name="transactions")
+    projects = models.ManyToManyField(
+        Project,
+        related_name="transactions",
+        through="TransactionProjectAssignment",
+    )
+    workers = models.ManyToManyField(
+        Worker,
+        related_name="transactions",
+        through="TransactionWorkerAssignment",
+    )
+
+    class Meta:
+        ordering = ["id"]
+
+
+class TransactionProjectAssignment(models.Model):
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+
+class TransactionWorkerAssignment(models.Model):
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)

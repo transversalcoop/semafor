@@ -61,6 +61,4 @@ def format_duration(d):
 def format_currency(f):
     if f is None:
         return ""
-    if int(f) == f:
-        return str(int(f))
     return "{:.2f}".format(f).replace(".", ",")

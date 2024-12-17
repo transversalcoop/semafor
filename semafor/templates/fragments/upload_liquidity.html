@@ -1,0 +1,24 @@
+{% set href = url("upload_liquidity") %}
+{% if ok %}
+<p>{{ _("S'han actualitzat les dades de liquiditat") }}</p>
+<p>
+  <a href="#" hx-get="{{ href }}" hx-target="closest div">
+    {{ _("Actualitza les dades de nou") }}
+  </a>
+</p>
+{% else %}
+  {% if error %}
+  <p>{{ _("No s'han pogut actualitzar les dades. Per favor, envia un arxiu correcte") }}</p>
+  {% endif %}
+
+  <form
+    hx-encoding="multipart/form-data"
+    hx-post="{{ href }}"
+    hx-target="closest div"
+  >
+    {{ csrf_input }}
+    <input type="file" name="transactions_file" class="form-control">
+    <button type="submit" class="btn btn-dark float-end mt-3">{{ _("Envia") }}</button>
+  </form>
+{% endif %}
+

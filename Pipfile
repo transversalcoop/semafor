@@ -13,6 +13,7 @@ babel = "*"
 django-debug-toolbar = "*"
 whitenoise = "*"
 psycopg2-binary = "*"
+pandas = {extras = ["excel"], version = "*"}
 
 [dev-packages]
 
