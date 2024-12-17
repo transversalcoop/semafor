@@ -333,9 +333,11 @@ document.addEventListener("keyup", (e) => {
   <ul class="columns-3">
     <li><strong>{{ _("Comença:") }}</strong> {{ localize(project.date_start) }}</li>
     <li><strong>{{ _("Acaba:") }}</strong> {{ localize(project.date_end) }}</li>
-    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ project.income }}€</li>
-    <li><strong>{{ _("Treball previst:") }}</strong> {{ project.compute_forecasted_work() }}€</li>
     <li><strong>{{ _("Confirmat:") }}</strong> {{ yes_no(project.confirmed) }}</li>
     <li><strong>{{ _("Arxivat:") }}</strong> {{ yes_no(project.archived) }}</li>
+    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ format_currency(project.income) }}€</li>
+    <li><strong>{{ _("Treball previst:") }}</strong> {{ format_currency(project.compute_forecasted_work_cost()) }}€</li>
+    <li><strong>{{ _("Ingressos obtinguts:") }}</strong> TODO</li>
+    <li><strong>{{ _("Treball fet:") }}</strong> {{ format_currency(project.compute_assessed_work_cost()) }}€</li>
   </ul>
 {% endmacro %}

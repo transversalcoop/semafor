@@ -6,7 +6,13 @@ from django.templatetags.l10n import localize
 
 from jinja2 import Environment
 
-from semafor.utils import link_active, dedication_intensity, yes_no, format_duration
+from semafor.utils import (
+    link_active,
+    dedication_intensity,
+    yes_no,
+    format_duration,
+    format_currency,
+)
 
 
 def environment(**options):
@@ -24,6 +30,7 @@ def environment(**options):
             "settings": settings,
             "link_active": link_active,
             "format_duration": format_duration,
+            "format_currency": format_currency,
             "dedication_intensity": dedication_intensity,
         }
     )

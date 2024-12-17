@@ -1,4 +1,5 @@
 import uuid
+import decimal
 
 from datetime import timedelta
 
@@ -103,14 +104,23 @@ class Project(models.Model):
 
         return totals, explanations
 
-    def compute_forecasted_work(self, worker=None):
+    def compute_forecasted_work_cost(self, worker=None):
         if worker:
             forecasts = self.workforecast_set.filter(worker=worker)
         else:
             forecasts = self.workforecast_set.all()
         work = sum(x.forecast for x in forecasts)
-        # TODO set this magic value in the Organization configuration
+        # TODO set this magic value in the Organization configuration; same in compute_assessed_work_cost
         return work / 100 * 2500
+
+    def compute_assessed_work_cost(self, worker=None):
+        if worker:
+            assessments = self.workassessment_set.filter(worker=worker)
+        else:
+            assessments = self.workassessment_set.all()
+        work = sum((x.assessment for x in assessments), start=timedelta(0))
+        hours = work.total_seconds() / 3600
+        return hours * 17.86
 
     def forecast_content_classes(self, worker=None):
         if worker:

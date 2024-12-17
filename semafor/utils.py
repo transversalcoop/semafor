@@ -56,3 +56,11 @@ def format_duration(d):
     minutes = (seconds // 60) % 60
     seconds = seconds % 60
     return f"{hours}:{minutes:02}:{seconds:02}"
+
+
+def format_currency(f):
+    if f is None:
+        return ""
+    if int(f) == f:
+        return str(int(f))
+    return "{:.2f}".format(f).replace(".", ",")
