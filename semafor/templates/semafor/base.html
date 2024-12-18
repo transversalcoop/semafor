@@ -96,28 +96,21 @@ htmx.on("htmx:afterSwap", function(e) {
   }
 })
 
-function hideClass(klass) {
-  document.querySelectorAll("." + klass).forEach(el => el.classList.add("d-none"));
+function toggleAux(id, klass) {
+  return (show) => {
+    if (show) {
+      document.getElementById(id).classList.add(klass);
+    } else {
+      document.getElementById(id).classList.remove(klass);
+    }
+  };
 }
-function showClass(klass) {
-  document.querySelectorAll("." + klass).forEach(el => el.classList.remove("d-none"));
-}
-function toggleEmpty(show) { if (show) { showClass("empty") } else { hideClass("empty") } }
-function toggleFull(show) { if (show) { showClass("full") } else { hideClass("full") } }
-function showNumbers(show) {
-  if (show) {
-    document.getElementById("content").classList.add("show-numbers");
-  } else {
-    document.getElementById("content").classList.remove("show-numbers");
-  }
-}
-function toggleSmallFont(small) {
-  if (small) {
-    document.getElementById("body").classList.add("tight");
-  } else {
-    document.getElementById("body").classList.remove("tight");
-  }
-}
+
+const toggleSmallFont = toggleAux("body", "tight");
+const toggleNumbers   = toggleAux("content", "show-numbers");
+const toggleControls  = toggleAux("content", "show-controls");
+const toggleEmpty     = toggleAux("content", "hide-empty");
+const toggleFull      = toggleAux("content", "hide-full");
 {% block js %}{% endblock %}
     </script>
   </body>

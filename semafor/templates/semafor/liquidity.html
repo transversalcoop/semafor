@@ -22,7 +22,6 @@
         <th>{{ _("Concepte") }}</th>
         <th>{{ _("Import") }}</th>
         <th>{{ _("Saldo") }}</th>
-        <th>{{ _("Etiquetes") }}</th>
         <th>{{ _("Projectes") }}</th>
         <th>{{ _("Treballadores") }}</th>
       </tr>
@@ -35,8 +34,7 @@
         <td>{{ t.concept }}</td>
         <td class="text-end">{{ format_currency(t.amount) }}€</td>
         <td class="text-end">{{ format_currency(t.balance) }}€</td>
-        <td></td>
-        <td></td>
+        <td>TODO (same for workers) on click get select with list of projects, on change assign project</td>
         <td></td>
       </tr>
       {% endfor %}

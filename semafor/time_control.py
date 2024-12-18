@@ -4,6 +4,9 @@ import datetime
 from datetime import timedelta
 
 
+from semafor.models import Project, WorkAssessment, OutOfBoundsException
+
+
 # This class handles files coming from the following mobile APP:
 # https://play.google.com/store/apps/details?id=org.transversalcoop.control_horari
 class ControlHorari:
@@ -100,3 +103,35 @@ class ControlHorari:
                 new_projects[key] = projects[key] * multiplier
 
         return new_projects
+
+
+def update_worker_assessments(worker, dbfile):
+    WorkAssessment.objects.filter(worker=worker).delete()
+    projects = ControlHorari(dbfile).get_projects_worked_time()
+    db_projects, missing_projects = {}, set()
+    for k in projects:
+        try:
+            project = Project.objects.get(name=k)
+            db_projects[k] = project
+        except Project.DoesNotExist:
+            missing_projects.add(k)
+
+    errors = []
+    if len(missing_projects) == 0:
+        for pname, assessments in projects.items():
+            project = db_projects[pname]
+            for assessment in assessments:
+                year = assessment["year"]
+                month = assessment["month"]
+                try:
+                    WorkAssessment.objects.create(
+                        worker=worker,
+                        project=project,
+                        year=year,
+                        month=month,
+                        assessment=assessment["worked_time"],
+                    )
+                except OutOfBoundsException as ex:
+                    errors.append(f"{project.name} ({year}-{month:02}): {ex}")
+
+    return missing_projects, errors

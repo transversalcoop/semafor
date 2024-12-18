@@ -25,7 +25,7 @@ urlpatterns = [
     ),
     path(
         "assessment/worker/<uuid:pk>/update/",
-        views.update_worker_assessment,
+        views.UpdateWorkerAssessmentsView.as_view(),
         name="update_worker_assessment",
     ),
     path(
@@ -34,7 +34,11 @@ urlpatterns = [
         name="project_assessment",
     ),
     path("liquidity", views.LiquidityView.as_view(), name="liquidity"),
-    path("liquidity/upload/", views.upload_liquidity, name="upload_liquidity"),
+    path(
+        "liquidity/upload/",
+        views.UploadLiquidityView.as_view(),
+        name="upload_liquidity",
+    ),
     path(
         "worker/dedication/create/",
         views.CreateWorkerDedicationView.as_view(),

@@ -230,3 +230,18 @@ table.table th a:hover {
   color: white !important;
 }
 
+.controls {
+  display: none;
+}
+
+.show-controls .controls {
+  display: initial;
+}
+
+.hide-empty .empty {
+  display: none;
+}
+
+.hide-full .full {
+  display: none;
+}

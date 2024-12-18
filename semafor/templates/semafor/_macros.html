@@ -67,14 +67,14 @@
   <th class="text-nowrap">
     {% if confirmed %}
     <i
-      class="bi-chevron-double-down text-danger clickable"
+      class="bi-chevron-double-down text-danger clickable controls"
       hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
       hx-vals='{"confirmed": false}'
       hx-include="[name='csrfmiddlewaretoken']"
     ></i>
     {% else %}
     <i
-      class="bi-chevron-double-up text-success clickable"
+      class="bi-chevron-double-up text-success clickable controls"
       hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
       hx-vals='{"confirmed": true}'
       hx-include="[name='csrfmiddlewaretoken']"
@@ -227,10 +227,19 @@
   <dl>
     <dt><code>?</code></dt>
     <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
+    <dt><code>c</code></dt>
+    <dd>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="showControlsSwitch" onchange="toggleControls(event.target.checked)">
+        <label class="form-check-label" for="showControlsSwitch">
+          {{ _("Mostra i amaga els controls addicionals") }}
+        </label>
+      </div>
+    </dd>
     <dt><code>n</code></dt>
     <dd>
       <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="showNumbers(event.target.checked)">
+        <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="toggleNumbers(event.target.checked)">
         <label class="form-check-label" for="showNumbersSwitch">
           {{ _("Mostra i amaga els números de la taula") }}
         </label>
@@ -287,6 +296,7 @@
 
 {% macro shortcuts_js() %}
 const shortcutsModal = new bootstrap.Modal("#shortcutsModal")
+const showControlsSwitch = document.getElementById("showControlsSwitch")
 const showNumbersSwitch = document.getElementById("showNumbersSwitch")
 const hideEmptySwitch = document.getElementById("hideEmptySwitch")
 const hideFullSwitch = document.getElementById("hideFullSwitch")
@@ -297,6 +307,7 @@ const ctrlKey = 17,
       key2 = 50,
       key3 = 51,
       keyb = 66,
+      keyc = 67,
       keyp = 80,
       keym = 77,
       keyn = 78,
@@ -306,26 +317,22 @@ document.addEventListener("keydown", (e) => {
   if (e.keyCode == ctrlKey) ctrDown = true;
 })
 
+function handleKey(e, keyCode, switchElement, handler) {
+  if (e.keyCode == keyCode) {
+    switchElement.checked = !switchElement.checked;
+    handler(switchElement.checked);
+  }
+}
+
 document.addEventListener("keyup", (e) => {
   if (e.keyCode == ctrlKey)     ctrDown = false;
   if (e.keyCode == questionKey) shortcutsModal.show();
 
-  if (e.keyCode == keyn) {
-    showNumbersSwitch.checked = !showNumbersSwitch.checked;
-    showNumbers(showNumbersSwitch.checked);
-  }
-  if (e.keyCode == keyb) {
-    hideEmptySwitch.checked = !hideEmptySwitch.checked;
-    toggleEmpty(!hideEmptySwitch.checked);
-  }
-  if (e.keyCode == keyp) {
-    hideFullSwitch.checked = !hideFullSwitch.checked;
-    toggleFull(!hideFullSwitch.checked);
-  }
-  if (e.keyCode == keym) {
-    smallFontSwitch.checked = !smallFontSwitch.checked;
-    toggleSmallFont(smallFontSwitch.checked);
-  }
+  handleKey(e, keyc, showControlsSwitch, toggleControls);
+  handleKey(e, keyn, showNumbersSwitch, toggleNumbers);
+  handleKey(e, keyb, hideEmptySwitch, toggleEmpty);
+  handleKey(e, keyp, hideFullSwitch, toggleFull);
+  handleKey(e, keym, smallFontSwitch, toggleSmallFont);
 })
 {% endmacro %}
 
