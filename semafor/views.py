@@ -190,6 +190,9 @@ class LiquidityView(StaffRequiredMixin, ListView):
     model = Transaction
     template_name = "semafor/liquidity.html"
 
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related("projects")
+
 
 class UploadLiquidityView(StaffRequiredMixin, TemplateView):
     template_name = "fragments/upload_liquidity.html"
@@ -223,14 +226,11 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
 
     def setup(self, request, *args, **kwargs):
         self.worker = get_object_or_404(Worker, pk=kwargs["pk"])
-        self.extra_context = {}
         super().setup(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["object"] = self.worker
-        for k in self.extra_context:
-            context[k] = self.extra_context[k]
         return context
 
     def post(self, request, *args, **kwargs):
@@ -254,3 +254,33 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
         except Exception as ex:
             self.extra_context = {"error": True}
             return super().get(request)
+
+
+class UpdateTransactionProjectsView(StaffRequiredMixin, TemplateView):
+    template_name = "fragments/update_transaction_projects.html"
+
+    def setup(self, request, pk, *args, **kwargs):
+        self.transaction = get_object_or_404(Transaction, pk=pk)
+        super().setup(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["transaction"] = self.transaction
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.extra_context = {"projects": Project.objects.all()}
+        return super().get(request)
+
+    def post(self, request, *args, **kwargs):
+        project_id = request.POST.get("project")
+        try:
+            project = Project.objects.get(pk=project_id)
+            self.transaction.projects.add(project)
+        except Exception:
+            pass
+        return super().get(request)
+
+    def delete(self, request, *args, **kwargs):
+        print("TODO DELETE!")
+        return super().get(request)

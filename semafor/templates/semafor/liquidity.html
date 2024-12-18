@@ -6,8 +6,8 @@
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
 {% block content %}
-
 <div id="inner-content">
+  {{ csrf_input }}
   <h1>{{ _("Liquiditat") }}</h1>
   <div>
     <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
@@ -34,8 +34,8 @@
         <td>{{ t.concept }}</td>
         <td class="text-end">{{ format_currency(t.amount) }}€</td>
         <td class="text-end">{{ format_currency(t.balance) }}€</td>
-        <td>TODO (same for workers) on click get select with list of projects, on change assign project</td>
-        <td></td>
+        {% with transaction=t %}{% include "fragments/update_transaction_projects.html" %}{% endwith %}
+        <td>TODO same as with projects</td>
       </tr>
       {% endfor %}
     </tbody>
