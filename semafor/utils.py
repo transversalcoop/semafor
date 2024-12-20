@@ -1,7 +1,7 @@
 import redis
 import threading
 
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -91,12 +91,17 @@ def format_currency(f):
 # Add context utils
 
 
-def add_time_span(context, projects):
+def add_time_span(context, projects, min_start=None):
     dates_start = [x.date_start for x in projects]
     dates_end = [x.date_end for x in projects]
     if len(dates_start) > 0:
         date_start = min(dates_start)
         date_end = max(dates_end)
+        if min_start and min_start > date_start:
+            date_start = min_start
+
+        if date_end < date_start:
+            date_end = date_start
         context["time_span"] = list(months_range(date_start, date_end))
 
 
@@ -106,7 +111,8 @@ def add_projects_forecast_context(context, worker=None):
     )
     context["projects"] = projects
     context["workers"] = Worker.objects.all()
-    add_time_span(context, projects)
+    now = datetime.now()
+    add_time_span(context, projects, min_start=date(now.year, now.month, 1))
 
     add_worked_forecast(context, projects, worker=worker)
 

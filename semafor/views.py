@@ -191,7 +191,7 @@ class LiquidityView(StaffRequiredMixin, ListView):
     template_name = "semafor/liquidity.html"
 
     def get_queryset(self):
-        return super().get_queryset().prefetch_related("projects")
+        return super().get_queryset().prefetch_related("projects", "workers")
 
 
 class UploadLiquidityView(StaffRequiredMixin, TemplateView):
@@ -282,5 +282,36 @@ class UpdateTransactionProjectsView(StaffRequiredMixin, TemplateView):
         return super().get(request)
 
     def delete(self, request, *args, **kwargs):
-        print("TODO DELETE!")
+        self.transaction.projects.clear()
+        return super().get(request)
+
+
+# TODO REFACTOR with UpdateTransactionProjectsView, almost identical; same for its templates
+class UpdateTransactionWorkersView(StaffRequiredMixin, TemplateView):
+    template_name = "fragments/update_transaction_workers.html"
+
+    def setup(self, request, pk, *args, **kwargs):
+        self.transaction = get_object_or_404(Transaction, pk=pk)
+        super().setup(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["transaction"] = self.transaction
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.extra_context = {"workers": Worker.objects.all()}
+        return super().get(request)
+
+    def post(self, request, *args, **kwargs):
+        worker_id = request.POST.get("worker")
+        try:
+            worker = Worker.objects.get(pk=worker_id)
+            self.transaction.workers.add(worker)
+        except Exception:
+            pass
+        return super().get(request)
+
+    def delete(self, request, *args, **kwargs):
+        self.transaction.workers.clear()
         return super().get(request)

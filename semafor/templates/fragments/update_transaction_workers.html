@@ -1,25 +1,25 @@
-{% set href = url("update_transaction_projects", args=[transaction.id]) %}
-{% if projects %}
+{% set href = url("update_transaction_workers", args=[transaction.id]) %}
+{% if workers %}
 <td>
   <select
-    name="project"
+    name="worker"
     class="form-select"
     hx-post="{{ href }}"
     hx-include="[name='csrfmiddlewaretoken']"
     hx-target="closest td"
   >
-    <option value="">{{ _("Selecciona un projecte") }}</option>
-    {% for project in projects %}
-    <option value="{{ project.uuid }}">{{ project.name }}</option>
+    <option value="">{{ _("Selecciona una treballadora") }}</option>
+    {% for worker in workers %}
+    <option value="{{ worker.uuid }}">{{ worker.name }}</option>
     {% endfor %}
   </select>
 </td>
 {% else %}
-  {% if len(transaction.projects.all()) > 0 %}
+  {% if len(transaction.workers.all()) > 0 %}
   <td>
-    {% for project in transaction.projects.all() %}
+    {% for worker in transaction.workers.all() %}
     <span class="badge text-bg-secondary">
-      {{ project }}
+      {{ worker }}
       <i
         class="bi-x-lg clickable"
         hx-delete="{{ href }}"
@@ -38,3 +38,4 @@
   ></td>
   {% endif %}
 {% endif %}
+

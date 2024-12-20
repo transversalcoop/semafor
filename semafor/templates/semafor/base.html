@@ -94,6 +94,10 @@ htmx.on("htmx:afterSwap", function(e) {
     input.focus();
     input.select();
   }
+  let select = e.target.querySelector("select");
+  if (select) {
+    select.focus();
+  }
 })
 
 function toggleAux(id, klass) {
