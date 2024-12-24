@@ -12,6 +12,14 @@ from django.contrib.auth.models import AbstractUser
 MAX_LENGTH = 1000
 
 
+def months_range(date_start, date_end):
+    ym_start = 12 * date_start.year + date_start.month - 1
+    ym_end = 12 * date_end.year + date_end.month
+    for ym in range(ym_start, ym_end):
+        y, m = divmod(ym, 12)
+        yield y, m + 1
+
+
 class User(AbstractUser):
     pass
 
@@ -114,13 +122,30 @@ class Project(models.Model):
         return work / 100 * 2500
 
     def compute_assessed_work_cost(self, worker=None):
+        return sum(
+            v
+            for _, v in self.compute_assessed_work_cost_by_months(worker=worker).items()
+        )
+
+    def compute_assessed_work_cost_by_months(self, worker=None):
         if worker:
             assessments = self.workassessment_set.filter(worker=worker)
         else:
             assessments = self.workassessment_set.all()
+
+        months = list(months_range(self.date_start, self.date_end))
+        return {
+            (year, month): self.extract_work_cost_from_assessments(
+                [a for a in assessments if a.year == year and a.month == month]
+            )
+            for year, month in months
+        }
+
+    def extract_work_cost_from_assessments(self, assessments):
         work = sum((x.assessment for x in assessments), start=timedelta(0))
-        hours = work.total_seconds() / 3600
-        return hours * 17.86
+        # TODO set this magic value in the Worker, probably computed from its
+        # expenses and some parameter inside the Organization configuration
+        return round(decimal.Decimal(work.total_seconds() / 3600 * 17.86), 2)
 
     def forecast_content_classes(self, worker=None):
         if worker:

@@ -1,6 +1,16 @@
+import io
 import redis
+import base64
 import threading
 
+import matplotlib
+import pandas as pd
+
+matplotlib.use("AGG")
+
+import matplotlib.pyplot as plt
+
+from decimal import Decimal
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
@@ -16,6 +26,7 @@ from semafor.models import (
     WorkerMonthDedication,
     WorkForecast,
     WorkAssessment,
+    months_range,
 )
 
 r = redis.Redis(
@@ -23,14 +34,6 @@ r = redis.Redis(
     port=settings.REDIS_PORT,
     decode_responses=True,
 )
-
-
-def months_range(date_start, date_end):
-    ym_start = 12 * date_start.year + date_start.month - 1
-    ym_end = 12 * date_end.year + date_end.month
-    for ym in range(ym_start, ym_end):
-        y, m = divmod(ym, 12)
-        yield y, m + 1
 
 
 def dedication_intensity(dedication, total_dedication):
@@ -70,6 +73,10 @@ def parse_int_safe(x):
         return int(x)
     except:
         return 0
+
+
+def format_month(ym):
+    return f"{ym[1]:02}/{ym[0]}"
 
 
 def format_duration(d):
@@ -214,8 +221,57 @@ def add_workers_forecast_context(project):
 def add_workers_assessment_context(project):
     context = {"object": project}
     context["time_span"] = list(months_range(project.date_start, project.date_end))
-    context["workers"] = Worker.objects.all()
+    context["workers"] = Worker.objects.all().prefetch_related(
+        "workassessment_set__project"
+    )
     add_worked_assessment(context, [project])
+    return context
+
+
+def add_economic_balance_context(context, project):
+    balance, balance_map = 0, {}
+    income, expenses = {}, {}
+    zero = Decimal()
+    for t in project.transactions.all():
+        ym = t.date.year, t.date.month
+        if t.amount > 0:
+            income.setdefault(ym, Decimal())
+            income[ym] += t.amount
+        else:
+            expenses.setdefault(ym, Decimal())
+            expenses[ym] -= t.amount
+
+    work_cost = project.compute_assessed_work_cost_by_months()
+    for k, v in work_cost.items():
+        expenses.setdefault(k, Decimal())
+        expenses[k] += v
+
+    months = list(months_range(project.date_start, project.date_end))
+    for ym in months:
+        balance += income.get(ym, 0)
+        balance -= expenses.get(ym, 0)
+        balance_map[ym] = balance
+
+    context["economic_balance"] = balance_map
+    income_list = [float(income.get(ym, 0)) for ym in months]
+    expenses_list = [-float(expenses.get(ym, 0)) for ym in months]
+    balance_list = [float(balance_map.get(ym, 0)) for ym in months]
+    df = pd.DataFrame(
+        zip(income_list, expenses_list, balance_list),
+        index=[format_month(ym) for ym in months],
+        columns=["income", "expenses", "balance"],
+    )
+    context["balance_df"] = df
+    ax = df[["balance"]].plot(color="black")
+    ax = df[["income"]].plot(kind="bar", ax=ax, color="tab:green")
+    df[["expenses"]].plot(kind="bar", ax=ax, color="tab:red")
+    plt.tight_layout()
+    b = io.BytesIO()
+    plt.savefig(b, format="png")
+    b.seek(0)
+    plot = base64.b64encode(b.read()).decode("utf-8")
+    plt.close()
+    context["balance_plot"] = plot
     return context
 
 

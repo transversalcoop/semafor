@@ -28,8 +28,8 @@
 {% macro table_head(title, time_span, el="th") %}
 <tr>
   <td>{{ title }}</td>
-  {% for year, month in time_span %}
-  <{{ el }} class="text-center">{{ "%02d" % month }}/{{ year }}</{{ el }}>
+  {% for ym in time_span %}
+  <{{ el }} class="text-center">{{ format_month(ym) }}</{{ el }}>
   {% endfor %}
 </tr>
 {% endmacro %}

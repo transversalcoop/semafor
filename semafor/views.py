@@ -29,6 +29,7 @@ from semafor.utils import (
     add_projects_assessment_context,
     add_workers_forecast_context,
     add_workers_assessment_context,
+    add_economic_balance_context,
     add_total_dedication_context,
     update_forecast_pages,
 )
@@ -182,8 +183,12 @@ class ProjectAssessmentView(StaffRequiredMixin, DetailView):
     model = Project
     template_name = "semafor/project_assessment.html"
 
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related("workassessment_set")
+
     def get_context_data(self, **kwargs):
-        return add_workers_assessment_context(self.get_object())
+        context = add_workers_assessment_context(self.get_object())
+        return add_economic_balance_context(context, self.get_object())
 
 
 class LiquidityView(StaffRequiredMixin, ListView):

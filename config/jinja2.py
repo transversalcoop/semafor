@@ -12,6 +12,7 @@ from semafor.utils import (
     yes_no,
     format_duration,
     format_currency,
+    format_month,
 )
 
 
@@ -31,6 +32,7 @@ def environment(**options):
             "link_active": link_active,
             "format_duration": format_duration,
             "format_currency": format_currency,
+            "format_month": format_month,
             "dedication_intensity": dedication_intensity,
         }
     )

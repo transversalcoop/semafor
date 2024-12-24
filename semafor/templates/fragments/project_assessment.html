@@ -14,8 +14,16 @@
     </thead>
     <tbody>
       {{ workers_assessment_table(object, workers, time_span, total_worked) }}
+      {{ table_head("", time_span) }}
+      <tr>
+        <td>{{ _("Balanç econòmic") }}</td>
+        {% for year, month in time_span %}
+        <td>{{ format_currency(economic_balance[(year, month)]) }}€</td>
+        {% endfor %}
+      </tr>
     </tbody>
   </table>
 </div>
 
+<img src="data:image/png;base64,{{ balance_plot }}">
 

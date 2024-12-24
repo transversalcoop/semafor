@@ -14,6 +14,7 @@ django-debug-toolbar = "*"
 whitenoise = "*"
 psycopg2-binary = "*"
 pandas = {extras = ["excel"], version = "*"}
+matplotlib = "*"
 
 [dev-packages]
 
