@@ -115,6 +115,10 @@ table.table th a:hover {
   height: 2rem;
 }
 
+.w-auto {
+  width: auto;
+}
+
 .w-5rem {
   width: 5rem;
 }

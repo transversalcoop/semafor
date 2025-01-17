@@ -80,9 +80,19 @@ urlpatterns = [
         name="update_work_forecast",
     ),
     path(
-        "project/<uuid:pk>/update-confirmed/",
+        "project/<uuid:pk>/update/confirmed/",
         views.UpdateProjectConfirmedView.as_view(),
         name="update_project_confirmed",
+    ),
+    path(
+        "project/<uuid:pk>/update/date-start/",
+        views.UpdateProjectDateStartView.as_view(),
+        name="update_project_date_start",
+    ),
+    path(
+        "project/<uuid:pk>/update/date-start/done/",
+        views.UpdateProjectDateStartDoneView.as_view(),
+        name="update_project_date_start_done",
     ),
 ]
 

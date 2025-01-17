@@ -1,4 +1,5 @@
 import io
+import copy
 import redis
 import base64
 import threading
@@ -92,7 +93,7 @@ def format_duration(d):
 def format_currency(f):
     if f is None:
         return ""
-    return "{:.2f}".format(f).replace(".", ",")
+    return "{:.2f}€".format(f).replace(".", ",")
 
 
 # Add context utils
@@ -241,8 +242,9 @@ def add_economic_balance_context(context, project):
             expenses.setdefault(ym, Decimal())
             expenses[ym] -= t.amount
 
-    work_cost = project.compute_assessed_work_cost_by_months()
-    for k, v in work_cost.items():
+    other_expenses = copy.deepcopy(expenses)
+    work_expenses = project.compute_assessed_work_expenses_by_months()
+    for k, v in work_expenses.items():
         expenses.setdefault(k, Decimal())
         expenses[k] += v
 
@@ -253,18 +255,25 @@ def add_economic_balance_context(context, project):
         balance_map[ym] = balance
 
     context["economic_balance"] = balance_map
+    context["income"] = income
+    context["other_expenses"] = other_expenses
+    context["work_expenses"] = work_expenses
     income_list = [float(income.get(ym, 0)) for ym in months]
     expenses_list = [-float(expenses.get(ym, 0)) for ym in months]
     balance_list = [float(balance_map.get(ym, 0)) for ym in months]
+
+    income_col = str(_("Ingressos"))
+    expenses_col = str(_("Despeses"))
+    balance_col = str(_("Balanç"))
     df = pd.DataFrame(
         zip(income_list, expenses_list, balance_list),
         index=[format_month(ym) for ym in months],
-        columns=["income", "expenses", "balance"],
+        columns=[income_col, expenses_col, balance_col],
     )
     context["balance_df"] = df
-    ax = df[["balance"]].plot(color="black")
-    ax = df[["income"]].plot(kind="bar", ax=ax, color="tab:green")
-    df[["expenses"]].plot(kind="bar", ax=ax, color="tab:red")
+    ax = df[[balance_col]].plot(color="black")
+    ax = df[[income_col]].plot(kind="bar", ax=ax, color="tab:green")
+    df[[expenses_col]].plot(kind="bar", ax=ax, color="tab:red", rot=30)
     plt.tight_layout()
     b = io.BytesIO()
     plt.savefig(b, format="png")

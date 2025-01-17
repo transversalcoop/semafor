@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from django.db import models
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
@@ -71,6 +72,13 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if self.date_start.year < 2020:
+            raise ValidationError(
+                _("L'any ha de ser posterior a 2020"), code="year_too_low"
+            )
+        return super().save(*args, **kwargs)
+
     def get_absolute_url(self):
         return reverse("project_forecast", args=[self.uuid])
 
@@ -112,22 +120,24 @@ class Project(models.Model):
 
         return totals, explanations
 
-    def compute_forecasted_work_cost(self, worker=None):
+    def compute_forecasted_work_expenses(self, worker=None):
         if worker:
             forecasts = self.workforecast_set.filter(worker=worker)
         else:
             forecasts = self.workforecast_set.all()
         work = sum(x.forecast for x in forecasts)
-        # TODO set this magic value in the Organization configuration; same in compute_assessed_work_cost
+        # TODO set this magic value in the Organization configuration; same in compute_assessed_work_expenses
         return work / 100 * 2500
 
-    def compute_assessed_work_cost(self, worker=None):
+    def compute_assessed_work_expenses(self, worker=None):
         return sum(
             v
-            for _, v in self.compute_assessed_work_cost_by_months(worker=worker).items()
+            for _, v in self.compute_assessed_work_expenses_by_months(
+                worker=worker
+            ).items()
         )
 
-    def compute_assessed_work_cost_by_months(self, worker=None):
+    def compute_assessed_work_expenses_by_months(self, worker=None):
         if worker:
             assessments = self.workassessment_set.filter(worker=worker)
         else:
@@ -135,13 +145,13 @@ class Project(models.Model):
 
         months = list(months_range(self.date_start, self.date_end))
         return {
-            (year, month): self.extract_work_cost_from_assessments(
+            (year, month): self.extract_work_expenses_from_assessments(
                 [a for a in assessments if a.year == year and a.month == month]
             )
             for year, month in months
         }
 
-    def extract_work_cost_from_assessments(self, assessments):
+    def extract_work_expenses_from_assessments(self, assessments):
         work = sum((x.assessment for x in assessments), start=timedelta(0))
         # TODO set this magic value in the Worker, probably computed from its
         # expenses and some parameter inside the Organization configuration

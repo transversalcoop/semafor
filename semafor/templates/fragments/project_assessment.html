@@ -1,13 +1,23 @@
-{% from 'semafor/_macros.html' import workers_assessment_table, table_head, project_details %}
+{% from 'semafor/_macros.html' import workers_assessment_table, table_head %}
+
+{% macro balance_row(title, time_span, m) %}
+  <tr>
+    <td class="text-start">{{ title }}</td>
+    {% for year, month in time_span %}
+    <td class="text-end">{{ format_currency(m.get((year, month))) }}</td>
+    {% endfor %}
+  </tr>
+{% endmacro %}
 
 <div id="inner-content">
   <h1>{{ _("Avaluació del projecte «%(name)s»", name=object.name) }}</h1>
-  <div>
-    <a href="{{ url("admin:semafor_project_change", args=[object.uuid]) }}" class="me-3">
-      {{ _("Edita els detalls del projecte") }}
-    </a>
-  </div>
-  {{ project_details(object) }}
+  <ul>
+    <li>
+      <strong>{{ _("Comença:") }}</strong>
+      {% include "fragments/update_project_date_start_done.html" %}
+    </li>
+    <li><strong>{{ _("Acaba:") }}</strong> {{ localize(object.date_end) }}</li>
+  </ul>
   <table class="table">
     <thead>
       {{ table_head(_("Treballadores"), time_span) }}
@@ -15,12 +25,10 @@
     <tbody>
       {{ workers_assessment_table(object, workers, time_span, total_worked) }}
       {{ table_head("", time_span) }}
-      <tr>
-        <td>{{ _("Balanç econòmic") }}</td>
-        {% for year, month in time_span %}
-        <td>{{ format_currency(economic_balance[(year, month)]) }}€</td>
-        {% endfor %}
-      </tr>
+      {{ balance_row(_("Ingressos"), time_span, income) }}
+      {{ balance_row(_("Despeses de treball"), time_span, work_expenses) }}
+      {{ balance_row(_("Altres despeses"), time_span, other_expenses) }}
+      {{ balance_row(_("Balanç econòmic"), time_span, economic_balance) }}
     </tbody>
   </table>
 </div>

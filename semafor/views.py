@@ -145,6 +145,26 @@ class UpdateProjectConfirmedView(StaffRequiredMixin, IgnoreResponseMixin, Update
         return response
 
 
+class UpdateProjectDateStartView(StaffRequiredMixin, UpdateView):
+    model = Project
+    fields = ["date_start"]
+    url_name = "update_project_date_start"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["fields"] = self.fields
+        context["post_url"] = reverse(self.url_name, kwargs=self.kwargs)
+        return context
+
+    def get_success_url(self):
+        return reverse(f"{self.url_name}_done", kwargs=self.kwargs)
+
+
+class UpdateProjectDateStartDoneView(StaffRequiredMixin, DetailView):
+    model = Project
+    template_name = "fragments/update_project_date_start_done.html"
+
+
 class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):
     model = WorkForecast
     fields = ["forecast"]

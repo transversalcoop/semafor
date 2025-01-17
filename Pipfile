@@ -15,6 +15,7 @@ whitenoise = "*"
 psycopg2-binary = "*"
 pandas = {extras = ["excel"], version = "*"}
 matplotlib = "*"
+ipython = "*"
 
 [dev-packages]
 

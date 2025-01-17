@@ -1,0 +1,13 @@
+{{ csrf_input }}
+{% if "date_start" in fields %}
+<input
+  hx-post="{{ post_url }}"
+  hx-include="[name='csrfmiddlewaretoken']"
+  hx-swap="outerHTML"
+  hx-trigger="keyup[key=='Enter']"
+  type="date"
+  name="date_start"
+  class="form-control form-control-sm d-inline w-auto"
+  required
+>
+{% endif %}
