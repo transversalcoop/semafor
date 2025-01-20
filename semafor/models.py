@@ -1,11 +1,11 @@
 import uuid
 import decimal
 
-from datetime import timedelta
+from datetime import timedelta, date
 
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
@@ -52,7 +52,10 @@ class Project(models.Model):
         primary_key=True,
     )
     name = models.CharField(max_length=MAX_LENGTH, verbose_name=_("Nom"))
-    date_start = models.DateField(verbose_name=_("Data d'inici"))
+    date_start = models.DateField(
+        verbose_name=_("Data d'inici"),
+        validators=[MinValueValidator(date(2020, 1, 1))],
+    )
     date_end = models.DateField(verbose_name=_("Data de finalització"))
     archived = models.BooleanField(
         default=False, verbose_name=_("Arxivat (s'oculta de totes les pàgines)")
@@ -71,13 +74,6 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        if self.date_start.year < 2020:
-            raise ValidationError(
-                _("L'any ha de ser posterior a 2020"), code="year_too_low"
-            )
-        return super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse("project_forecast", args=[self.uuid])
@@ -121,13 +117,38 @@ class Project(models.Model):
         return totals, explanations
 
     def compute_forecasted_work_expenses(self, worker=None):
+        return sum(
+            v
+            for _, v in self.compute_forecasted_work_expenses_by_months(
+                worker=worker
+            ).items()
+        )
+
+    def compute_forecasted_work_expenses_by_months(self, worker=None, min_month=None):
         if worker:
             forecasts = self.workforecast_set.filter(worker=worker)
         else:
             forecasts = self.workforecast_set.all()
+
+        if min_month:
+            year, month = min_month
+            future_years = Q(year__gt=year)
+            future_months = Q(year=year, month__gte=month)
+            forecasts = forecasts.filter(future_years | future_months)
+
+        months = list(months_range(self.date_start, self.date_end))
+        return {
+            (year, month): self.extract_work_expenses_from_forecasts(
+                [f for f in forecasts if f.year == year and f.month == month]
+            )
+            for year, month in months
+        }
+
+    def extract_work_expenses_from_forecasts(self, forecasts):
         work = sum(x.forecast for x in forecasts)
-        # TODO set this magic value in the Organization configuration; same in compute_assessed_work_expenses
-        return work / 100 * 2500
+        # TODO set this magic value in the Organization configuration; same in
+        # compute_assessed_work_expenses
+        return round(decimal.Decimal(work / 100 * 2500), 2)
 
     def compute_assessed_work_expenses(self, worker=None):
         return sum(
@@ -137,11 +158,17 @@ class Project(models.Model):
             ).items()
         )
 
-    def compute_assessed_work_expenses_by_months(self, worker=None):
+    def compute_assessed_work_expenses_by_months(self, worker=None, max_month=None):
         if worker:
             assessments = self.workassessment_set.filter(worker=worker)
         else:
             assessments = self.workassessment_set.all()
+
+        if max_month:
+            year, month = max_month
+            previous_years = Q(year__lt=year)
+            previous_months = Q(year=year, month__lt=month)
+            assessments = assessments.filter(previous_years | previous_months)
 
         months = list(months_range(self.date_start, self.date_end))
         return {

@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 
+from django.urls import reverse
 from django.conf import settings
+from django.utils import timezone
+from django.views.generic import UpdateView
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -35,6 +38,12 @@ r = redis.Redis(
     port=settings.REDIS_PORT,
     decode_responses=True,
 )
+
+
+def previous_month(t):
+    d = date(t.year, t.month, 1)
+    d -= timedelta(3)
+    return d
 
 
 def dedication_intensity(dedication, total_dedication):
@@ -112,6 +121,8 @@ def add_time_span(context, projects, min_start=None):
             date_end = date_start
         context["time_span"] = list(months_range(date_start, date_end))
 
+    return context
+
 
 def add_projects_forecast_context(context, worker=None):
     projects = Project.objects.filter(archived=False).prefetch_related(
@@ -122,7 +133,7 @@ def add_projects_forecast_context(context, worker=None):
     now = datetime.now()
     add_time_span(context, projects, min_start=date(now.year, now.month, 1))
 
-    add_worked_forecast(context, projects, worker=worker)
+    context = add_worked_forecast(context, projects, worker=worker)
 
     workforecasts = WorkForecast.objects.all().prefetch_related("project", "worker")
     if worker:
@@ -137,8 +148,7 @@ def add_projects_forecast_context(context, worker=None):
 
         context["project_forecasts"] = project_forecasts
 
-    add_dedications(context, worker=worker)
-    return context
+    return add_dedications(context, worker=worker)
 
 
 def add_worked_forecast(context, projects, worker=None):
@@ -151,8 +161,11 @@ def add_worked_forecast(context, projects, worker=None):
             total_worked[k] += v
             if p.confirmed:
                 confirmed_worked[k] += v
-    context["confirmed_worked"] = confirmed_worked
-    context["total_worked"] = total_worked
+
+    return context | {
+        "confirmed_worked_forecast": confirmed_worked,
+        "total_worked_forecast": total_worked,
+    }
 
 
 def add_projects_assessment_context(context, worker=None):
@@ -161,8 +174,8 @@ def add_projects_assessment_context(context, worker=None):
     )
     context["workers"] = Worker.objects.all()
     context["projects"] = projects
-    add_time_span(context, projects)
-    add_worked_assessment(context, projects, worker=worker)
+    context = add_time_span(context, projects)
+    context = add_worked_assessment(context, projects, worker=worker)
 
     workassessments = WorkAssessment.objects.all().prefetch_related("project", "worker")
     if worker:
@@ -187,7 +200,8 @@ def add_worked_assessment(context, projects, worker=None):
         for k, v in totals.items():
             total_worked.setdefault(k, timedelta(0))
             total_worked[k] += v
-    context["total_worked"] = total_worked
+
+    return context | {"total_worked_assessment": total_worked}
 
 
 def add_dedications(context, worker=None):
@@ -206,27 +220,37 @@ def add_dedications(context, worker=None):
         worker_dedications.setdefault(wd.worker.uuid, {})
         worker_dedications[wd.worker.uuid][k] = wd
 
-    context["total_dedication"] = total_dedication
-    context["worker_dedications"] = worker_dedications
+    return context | {
+        "total_dedication": total_dedication,
+        "worker_dedications": worker_dedications,
+    }
 
 
 def add_workers_forecast_context(project):
     context = {"object": project}
     context["time_span"] = list(months_range(project.date_start, project.date_end))
     context["workers"] = Worker.objects.all()
-    add_worked_forecast(context, [project])
-    add_dedications(context)
-    return context
+    context = add_worked_forecast(context, [project])
+    return add_dedications(context)
 
 
 def add_workers_assessment_context(project):
-    context = {"object": project}
-    context["time_span"] = list(months_range(project.date_start, project.date_end))
-    context["workers"] = Worker.objects.all().prefetch_related(
-        "workassessment_set__project"
-    )
-    add_worked_assessment(context, [project])
-    return context
+    now = timezone.now()
+    assessed_time_span = list(months_range(project.date_start, previous_month(now)))
+    forecasted_time_span = list(months_range(now, project.date_end))
+    time_span = assessed_time_span + forecasted_time_span
+    workers = Worker.objects.all().prefetch_related("workassessment_set__project")
+
+    context = add_worked_assessment({}, [project])
+    context = add_worked_forecast(context, [project])
+    context = add_dedications(context)
+    return context | {
+        "object": project,
+        "assessed_time_span": assessed_time_span,
+        "forecasted_time_span": forecasted_time_span,
+        "time_span": time_span,
+        "workers": workers,
+    }
 
 
 def add_economic_balance_context(context, project):
@@ -243,7 +267,18 @@ def add_economic_balance_context(context, project):
             expenses[ym] -= t.amount
 
     other_expenses = copy.deepcopy(expenses)
-    work_expenses = project.compute_assessed_work_expenses_by_months()
+    now = timezone.now()
+    present_month = (now.year, now.month)
+    work_expenses = project.compute_assessed_work_expenses_by_months(
+        max_month=present_month
+    )
+    forecasted_work_expenses = project.compute_forecasted_work_expenses_by_months(
+        min_month=present_month
+    )
+    for k, v in forecasted_work_expenses.items():
+        work_expenses.setdefault(k, Decimal())
+        work_expenses[k] += v
+
     for k, v in work_expenses.items():
         expenses.setdefault(k, Decimal())
         expenses[k] += v
@@ -361,3 +396,15 @@ def update_forecast_pages(worker=None, project=None):
 
     # TODO do it with something cheaper than a thread? async?
     threading.Thread(target=f, args=[worker, project]).start()
+
+
+class UpdateSingleFieldView(UpdateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["field"] = self.fields[0]
+        context["post_url"] = reverse(self.url_name, kwargs=self.kwargs)
+        context["edit"] = self.request.GET.get("edit", "") != "False"
+        return context
+
+    def get_success_url(self):
+        return reverse(f"{self.url_name}", kwargs=self.kwargs) + "?edit=False"

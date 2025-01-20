@@ -90,9 +90,9 @@ urlpatterns = [
         name="update_project_date_start",
     ),
     path(
-        "project/<uuid:pk>/update/date-start/done/",
-        views.UpdateProjectDateStartDoneView.as_view(),
-        name="update_project_date_start_done",
+        "project/<uuid:pk>/update/date-end/",
+        views.UpdateProjectDateEndView.as_view(),
+        name="update_project_date_end",
     ),
 ]
 

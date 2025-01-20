@@ -14,16 +14,18 @@
   <ul>
     <li>
       <strong>{{ _("Comença:") }}</strong>
-      {% include "fragments/update_project_date_start_done.html" %}
+      {% with field="date_start" %}{% include "semafor/project_form.html" %}{% endwith %}
     </li>
-    <li><strong>{{ _("Acaba:") }}</strong> {{ localize(object.date_end) }}</li>
+    <li><strong>{{ _("Acaba:") }}</strong>
+      {% with field="date_end" %}{% include "semafor/project_form.html" %}{% endwith %}
+    </li>
   </ul>
   <table class="table">
     <thead>
       {{ table_head(_("Treballadores"), time_span) }}
     </thead>
     <tbody>
-      {{ workers_assessment_table(object, workers, time_span, total_worked) }}
+      {{ workers_assessment_table(object, workers, assessed_time_span, forecasted_time_span, total_worked_assessment, total_worked_forecast, worker_dedications, total_dedication) }}
       {{ table_head("", time_span) }}
       {{ balance_row(_("Ingressos"), time_span, income) }}
       {{ balance_row(_("Despeses de treball"), time_span, work_expenses) }}

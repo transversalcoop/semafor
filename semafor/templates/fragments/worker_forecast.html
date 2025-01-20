@@ -30,7 +30,7 @@
         {% endfor %}
       </tr>
       {{ table_head(_("Projectes confirmats"), time_span, el="td") }}
-      {{ projects_forecast_table(projects, time_span, confirmed_worked, total_worked, total_dedication, worker=object, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
+      {{ projects_forecast_table(projects, time_span, confirmed_worked_forecast, total_worked_forecast, total_dedication, worker=object, project_forecasts=project_forecasts, worker_dedications=worker_dedications) }}
     </tbody>
   </table>
 </div>

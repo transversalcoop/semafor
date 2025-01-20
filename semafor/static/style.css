@@ -249,3 +249,8 @@ table.table th a:hover {
 .hide-full .full {
   display: none;
 }
+
+.inline-errors ul, .inline-errors li {
+  display: inline;
+  color: red;
+}

@@ -1,13 +1,23 @@
-{{ csrf_input }}
-{% if "date_start" in fields %}
-<input
-  hx-post="{{ post_url }}"
-  hx-include="[name='csrfmiddlewaretoken']"
-  hx-swap="outerHTML"
-  hx-trigger="keyup[key=='Enter']"
-  type="date"
-  name="date_start"
-  class="form-control form-control-sm d-inline w-auto"
-  required
->
+{% if edit %}
+<span>
+  {{ csrf_input }}
+  <input
+    hx-post="{{ post_url }}"
+    hx-include="[name='csrfmiddlewaretoken']"
+    hx-swap="outerHTML"
+    hx-trigger="keyup[key=='Enter']"
+    hx-target="closest span"
+    type="date"
+    name="{{ field }}"
+    class="form-control form-control-sm d-inline w-auto"
+    required
+  >
+  {% if field in form.errors %}
+    <span class="inline-errors">{{ form.errors[field] }}</span>
+  {% endif %}
+</span>
+{% else %}
+<span hx-get="{{ url("update_project_" + field, args=[object.uuid]) }}" hx-swap="outerHTML">
+  {{ localize(object[field]) }}
+</span>
 {% endif %}

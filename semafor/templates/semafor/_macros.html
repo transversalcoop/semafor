@@ -132,22 +132,26 @@
   {% endfor %}
 {% endmacro %}
 
-{% macro workers_assessment_table(project, workers, time_span, total_worked) %}
+{% macro workers_assessment_table(project, workers, assessed_time_span, forecasted_time_span, total_worked_assessment, total_worked_forecast, worker_dedications, total_dedication) %}
   {% for worker in workers %}
   <tr class="{{ worker.assessment_content_classes(project) }}">
     <th>
       <a href="{{ url("worker_assessment", args=[worker.uuid]) }}">{{ worker }}</a>
     </th>
-    {{ worker_assessment_row(project, worker, time_span, total_worked) }}
+    {{ worker_assessment_row(project, worker, assessed_time_span, total_worked_assessment) }}
+    {{ worker_forecast_row(project, worker, forecasted_time_span, worker_dedications) }}
   </tr>
   {% endfor %}
 
   <tr class="border-top-black">
     <th class="fw-bold">{{ _("Total") }}</th>
-    {% for year, month in time_span %}
-      {% with total_worked=total_worked[(year, month)] %}
+    {% for year, month in assessed_time_span %}
+      {% with total_worked=total_worked_assessment[(year, month)] %}
         {% include 'fragments/assessment_total.html' %}
       {% endwith %}
+    {% endfor %}
+    {% for year, month in forecasted_time_span %}
+      {% with total_worked=total_worked_forecast[(year, month)], total_dedication=total_dedication[(year, month)] %}{% include 'fragments/forecast_total.html' %}{% endwith %}
     {% endfor %}
   </tr>
 {% endmacro %}
@@ -343,8 +347,8 @@ document.addEventListener("keyup", (e) => {
     <li><strong>{{ _("Acaba:") }}</strong> {{ localize(project.date_end) }}</li>
     <li><strong>{{ _("Confirmat:") }}</strong> {{ yes_no(project.confirmed) }}</li>
     <li><strong>{{ _("Arxivat:") }}</strong> {{ yes_no(project.archived) }}</li>
-    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ format_currency(project.income) }}€</li>
-    <li><strong>{{ _("Treball previst:") }}</strong> {{ format_currency(project.compute_forecasted_work_expenses()) }}€</li>
-    <li><strong>{{ _("Treball fet:") }}</strong> {{ format_currency(project.compute_assessed_work_expenses()) }}€</li>
+    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ format_currency(project.income) }}</li>
+    <li><strong>{{ _("Treball previst:") }}</strong> {{ format_currency(project.compute_forecasted_work_expenses()) }}</li>
+    <li><strong>{{ _("Treball fet:") }}</strong> {{ format_currency(project.compute_assessed_work_expenses()) }}</li>
   </ul>
 {% endmacro %}

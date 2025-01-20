@@ -32,8 +32,8 @@
         <td>{{ t.id }}</td>
         <td>{{ t.date }}</td>
         <td>{{ t.concept }}</td>
-        <td class="text-end">{{ format_currency(t.amount) }}€</td>
-        <td class="text-end">{{ format_currency(t.balance) }}€</td>
+        <td class="text-end">{{ format_currency(t.amount) }}</td>
+        <td class="text-end">{{ format_currency(t.balance) }}</td>
         {% with transaction=t %}{% include "fragments/update_transaction_projects.html" %}{% endwith %}
         {% with transaction=t %}{% include "fragments/update_transaction_workers.html" %}{% endwith %}
       </tr>

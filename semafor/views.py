@@ -24,6 +24,7 @@ from semafor.models import (
     Transaction,
 )
 
+from semafor.utils import UpdateSingleFieldView
 from semafor.utils import (
     add_projects_forecast_context,
     add_projects_assessment_context,
@@ -145,24 +146,16 @@ class UpdateProjectConfirmedView(StaffRequiredMixin, IgnoreResponseMixin, Update
         return response
 
 
-class UpdateProjectDateStartView(StaffRequiredMixin, UpdateView):
+class UpdateProjectDateStartView(StaffRequiredMixin, UpdateSingleFieldView):
     model = Project
     fields = ["date_start"]
     url_name = "update_project_date_start"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["fields"] = self.fields
-        context["post_url"] = reverse(self.url_name, kwargs=self.kwargs)
-        return context
 
-    def get_success_url(self):
-        return reverse(f"{self.url_name}_done", kwargs=self.kwargs)
-
-
-class UpdateProjectDateStartDoneView(StaffRequiredMixin, DetailView):
+class UpdateProjectDateEndView(StaffRequiredMixin, UpdateSingleFieldView):
     model = Project
-    template_name = "fragments/update_project_date_start_done.html"
+    fields = ["date_end"]
+    url_name = "update_project_date_end"
 
 
 class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):
