@@ -50,6 +50,11 @@ urlpatterns = [
         name="update_transaction_workers",
     ),
     path(
+        "expected_liquidity",
+        views.ExpectedLiquidityView.as_view(),
+        name="expected_liquidity",
+    ),
+    path(
         "worker/dedication/create/",
         views.CreateWorkerDedicationView.as_view(),
         name="create_worker_dedication",

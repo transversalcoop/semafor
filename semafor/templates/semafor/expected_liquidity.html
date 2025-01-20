@@ -1,7 +1,6 @@
 {% extends "semafor/base.html" %}
 
 {% from 'semafor/_macros.html' import liquidity_menu, shortcuts_menu, shortcuts_modal, shortcuts_js %}
-{% from 'semafor/_macros.html' import table_head, modal_start, modal_end %}
 
 {% block submenu %}{{ liquidity_menu(request) }}{% endblock %}
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
@@ -9,48 +8,33 @@
 {% block content %}
 <div id="inner-content">
   {{ csrf_input }}
-  <h1>{{ _("Moviments") }}</h1>
-  <div>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
-      {{ _("Actualitza les dades de liquiditat") }}
-    </a>
-  </div>
+  <h1>{{ _("Liquiditat prevista") }}</h1>
   <table class="table text-start">
     <thead>
       <tr>
-        <th>{{ _("Apunt") }}</th>
         <th>{{ _("Data") }}</th>
         <th>{{ _("Concepte") }}</th>
         <th>{{ _("Import") }}</th>
-        <th>{{ _("Saldo") }}</th>
-        <th>{{ _("Projectes") }}</th>
-        <th>{{ _("Treballadores") }}</th>
+        <th>{{ _("Balanç") }}</th>
       </tr>
     </thead>
     <tbody>
       {% for t in object_list %}
       <tr>
-        <td>{{ t.id }}</td>
-        <td>{{ t.date }}</td>
+        <td>{{ format_month((t.year, t.month)) }}</td>
         <td>{{ t.concept }}</td>
         <td class="text-end">{{ format_currency(t.amount) }}</td>
         <td class="text-end">{{ format_currency(t.balance) }}</td>
-        {% with transaction=t %}{% include "fragments/update_transaction_projects.html" %}{% endwith %}
-        {% with transaction=t %}{% include "fragments/update_transaction_workers.html" %}{% endwith %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
-
-  {{ modal_start("uploadFileModal", _("Actualitza les dades de liquiditat")) }}
-  {% include "fragments/upload_liquidity.html" %}
-  {{ modal_end() }}
 </div>
-
 {{ shortcuts_modal() }}
 {% endblock %}
 
 {% block js %}
 {{ shortcuts_js() }}
 {% endblock %}
+
 

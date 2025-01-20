@@ -386,6 +386,47 @@ class Transaction(models.Model):
         ordering = ["id"]
 
 
+class ExpectedTransaction(models.Model):
+    REPEAT_CHOICES = [
+        ("NO", _("No")),
+        ("MONTHLY", _("Mensual")),
+    ]
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        primary_key=True,
+    )
+    concept = models.CharField(max_length=MAX_LENGTH)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # starting date to happen
+    year = models.IntegerField()
+    month = models.IntegerField()
+
+    repeat = models.CharField(max_length=10, choices=REPEAT_CHOICES)
+
+    projects = models.ManyToManyField(
+        Project,
+        related_name="expected_transactions",
+        through="ExpectedTransactionProjectAssignment",
+    )
+    workers = models.ManyToManyField(
+        Worker,
+        related_name="expected_transactions",
+        through="ExpectedTransactionWorkerAssignment",
+    )
+
+    class Meta:
+        ordering = ["year", "month", "concept"]
+
+    def __str__(self):
+        s = f"({self.amount}€) {self.concept} - {self.year}-{self.month}"
+        if self.repeat == "MONTHLY":
+            s += " (repetit mensualment)"
+        return s
+
+
 class TransactionProjectAssignment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -393,4 +434,14 @@ class TransactionProjectAssignment(models.Model):
 
 class TransactionWorkerAssignment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
+
+
+class ExpectedTransactionProjectAssignment(models.Model):
+    transaction = models.ForeignKey(ExpectedTransaction, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+
+class ExpectedTransactionWorkerAssignment(models.Model):
+    transaction = models.ForeignKey(ExpectedTransaction, on_delete=models.CASCADE)
     worker = models.ForeignKey(Worker, on_delete=models.CASCADE)

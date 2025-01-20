@@ -23,6 +23,27 @@
 </div>
 {% endmacro %}
 
+{% macro liquidity_menu(request, workers, url_name) %}
+<div class="navbar navbar-expand-md bd-navbar">
+  <nav class="container-fluid d-flex justify-content-start" aria-label="Navegació secundària">
+    <ul class="navbar-nav mb-2 mb-lg-0 navbar-light">
+      <li class="nav-item">
+        {% set link = url("liquidity") %}
+        <a class="nav-link {% if link_active(request, link, exact=True) %}active{% endif %}" aria-current="page" href="{{ link }}">
+          {{ _("Moviments") }}
+        </a>
+      </li>
+      <li class="nav-item">
+        {% set link = url("expected_liquidity") %}
+        <a class="nav-link {% if link_active(request, link, exact=True) %}active{% endif %}" aria-current="page" href="{{ link }}">
+          {{ _("Liquiditat") }}
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>
+{% endmacro %}
+
 {% macro project_classes(project, year, month) %}{% if project.starts(year, month) %} project-starts{% endif %}{% if project.ends(year, month) %} project-ends{% endif %}{% endmacro %}
 
 {% macro table_head(title, time_span, el="th") %}

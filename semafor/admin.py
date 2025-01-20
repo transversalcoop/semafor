@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from semafor.models import Project, Worker
+from semafor.models import Project
+from semafor.models import Worker
+from semafor.models import ExpectedTransaction
 
 
 class ProjectAdmin(admin.ModelAdmin):
@@ -14,3 +16,4 @@ class ProjectAdmin(admin.ModelAdmin):
 
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(Worker)
+admin.site.register(ExpectedTransaction)

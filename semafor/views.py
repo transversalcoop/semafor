@@ -1,5 +1,8 @@
+import copy
 import redis
+import decimal
 import tempfile
+import datetime
 
 
 from django.urls import reverse
@@ -22,6 +25,8 @@ from semafor.models import (
     WorkerMonthDedication,
     WorkForecast,
     Transaction,
+    ExpectedTransaction,
+    months_range,
 )
 
 from semafor.utils import UpdateSingleFieldView
@@ -210,6 +215,31 @@ class LiquidityView(StaffRequiredMixin, ListView):
 
     def get_queryset(self):
         return super().get_queryset().prefetch_related("projects", "workers")
+
+
+class ExpectedLiquidityView(StaffRequiredMixin, ListView):
+    model = ExpectedTransaction
+    template_name = "semafor/expected_liquidity.html"
+
+    def get_queryset(self):
+        until = datetime.date(2025, 12, 1)
+        lst = list(super().get_queryset())
+        repeated = []
+        for x in lst:
+            if x.repeat == "MONTHLY":
+                start = datetime.date(x.year, x.month, 1)
+                for month in months_range(start, until):
+                    repetition = copy.deepcopy(x)
+                    repetition.year, repetition.month = month
+                    repeated.append(repetition)
+
+        balance = decimal.Decimal(0)
+        lst += repeated
+        for i in range(len(lst)):
+            balance += lst[i].amount
+            lst[i].balance = balance
+
+        return lst
 
 
 class UploadLiquidityView(StaffRequiredMixin, TemplateView):
