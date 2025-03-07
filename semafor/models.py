@@ -223,6 +223,14 @@ class Project(models.Model):
         return month >= starts and month <= ends
 
 
+class ProjectAlias(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    alias = models.CharField(max_length=MAX_LENGTH, unique=True)
+
+    def __str__(self):
+        return f"{self.alias} (alias de «{self.project.name}»)"
+
+
 class Worker(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,

@@ -22,11 +22,24 @@
   <p>
     {{ _("Els següents projectes no es corresponen a projectes existents a l'aplicació:") }}
   </p>
-  <ul>
-    {% for p in missing_projects %}
-    <li>{{ p }}</li>
-    {% endfor %}
-  </ul>
+  <table class="table mb-2">
+    <thead>
+      <tr>
+        <th>{{ _("Projecte") }}</th>
+        <th>{{ _("Assigna a projecte existent") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in missing_projects %}
+      <tr>
+        <td class="text-start">{{ p }}</td>
+        <td>
+          {% include "semafor/projectalias_form.html" %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% endif %}
 
   <form

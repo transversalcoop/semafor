@@ -1,10 +1,8 @@
 import sqlite3
 import datetime
 
-from datetime import timedelta
 
-
-from semafor.models import Project, WorkAssessment, OutOfBoundsException
+from semafor.models import Project, ProjectAlias, WorkAssessment, OutOfBoundsException
 
 
 # This class handles files coming from the following mobile APP:
@@ -23,17 +21,18 @@ class ControlHorari:
         self.get_check_types_names()
 
         all_projects = {}
-        for i in range(1, 13):
-            # TODO do all months demanded by user
-            projects = self.get_month_projects_worked_time(f"2024-{i:02}")
-            for k, v in projects.items():
-                all_projects.setdefault(k, []).append(
-                    {
-                        "year": 2024,
-                        "month": i,
-                        "worked_time": v,
-                    }
-                )
+        # TODO do all months demanded by user or all months in file
+        for year in range(2023, 2026):
+            for i in range(1, 13):
+                projects = self.get_month_projects_worked_time(f"{year}-{i:02}")
+                for k, v in projects.items():
+                    all_projects.setdefault(k, []).append(
+                        {
+                            "year": year,
+                            "month": i,
+                            "worked_time": v,
+                        }
+                    )
 
         return all_projects
 
@@ -63,7 +62,7 @@ class ControlHorari:
                         row[2],
                     )
                 )
-        except:
+        except Exception:
             sql = """SELECT timestamp, check_type_id FROM checks
                      WHERE timestamp LIKE ? ORDER BY timestamp ASC;"""
             for row in self.cur.execute(sql, [date_str + "-%"]):
@@ -114,7 +113,11 @@ def update_worker_assessments(worker, dbfile):
             project = Project.objects.get(name=k)
             db_projects[k] = project
         except Project.DoesNotExist:
-            missing_projects.add(k)
+            try:
+                alias = ProjectAlias.objects.get(alias=k)
+                db_projects[k] = alias.project
+            except ProjectAlias.DoesNotExist:
+                missing_projects.add(k)
 
     errors = []
     if len(missing_projects) == 0:

@@ -1,0 +1,13 @@
+<select
+  name="project"
+  class="form-select"
+  hx-post="{{ url("create_project_alias") }}"
+  hx-include="[name='csrfmiddlewaretoken']"
+  hx-target="closest td"
+  hx-vals='{"alias": "{{ p }}"}'
+>
+  <option value="">{{ _("Selecciona un projecte") }}</option>
+  {% for project in projects %}
+  <option value="{{ project.uuid }}">{{ project.name }}</option>
+  {% endfor %}
+</select>

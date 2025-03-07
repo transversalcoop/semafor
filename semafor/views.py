@@ -1,5 +1,4 @@
 import copy
-import redis
 import decimal
 import tempfile
 import datetime
@@ -21,6 +20,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 
 from semafor.models import (
     Project,
+    ProjectAlias,
     Worker,
     WorkerMonthDedication,
     WorkForecast,
@@ -292,6 +292,7 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
                 )
                 if len(missing_projects) > 0 or len(errors) > 0:
                     self.extra_context = {
+                        "projects": Project.objects.all(),
                         "missing_projects": missing_projects,
                         "errors": errors,
                     }
@@ -299,7 +300,7 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
 
             self.extra_context = {"ok": True}
             return super().get(request)
-        except Exception as ex:
+        except Exception:
             self.extra_context = {"error": True}
             return super().get(request)
 
@@ -363,3 +364,11 @@ class UpdateTransactionWorkersView(StaffRequiredMixin, TemplateView):
     def delete(self, request, *args, **kwargs):
         self.transaction.workers.clear()
         return super().get(request)
+
+
+class CreateProjectAlias(StaffRequiredMixin, CreateView):
+    model = ProjectAlias
+    fields = ["project", "alias"]
+
+    def get_success_url(self):
+        return reverse("create_project_alias")

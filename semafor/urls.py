@@ -99,6 +99,11 @@ urlpatterns = [
         views.UpdateProjectDateEndView.as_view(),
         name="update_project_date_end",
     ),
+    path(
+        "project-alias/create/",
+        views.CreateProjectAlias.as_view(),
+        name="create_project_alias",
+    ),
 ]
 
 if settings.DEBUG:
