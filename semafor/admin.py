@@ -9,6 +9,7 @@ from semafor.models import WorkAssessment
 
 class ProjectAdmin(admin.ModelAdmin):
     model = Project
+    list_display = ("name", "date_start", "date_end")
     fields = (
         ("name", "income"),
         ("date_start", "date_end"),

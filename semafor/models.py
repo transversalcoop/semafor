@@ -5,6 +5,7 @@ from datetime import timedelta, date
 
 from django.db import models
 from django.db.models import Q
+from django.conf import settings
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
@@ -148,7 +149,7 @@ class Project(models.Model):
         work = sum(x.forecast for x in forecasts)
         # TODO set this magic value in the Organization configuration; same in
         # compute_assessed_work_expenses
-        return round(decimal.Decimal(work / 100 * 2500), 2)
+        return round(decimal.Decimal(work / 100 * settings.WORKER_MONTH_EXPENSE), 2)
 
     def compute_assessed_work_expenses(self, worker=None):
         return sum(
@@ -182,7 +183,9 @@ class Project(models.Model):
         work = sum((x.assessment for x in assessments), start=timedelta(0))
         # TODO set this magic value in the Worker, probably computed from its
         # expenses and some parameter inside the Organization configuration
-        return round(decimal.Decimal(work.total_seconds() / 3600 * 17.86), 2)
+        hours = work.total_seconds() / 3600
+        expense = decimal.Decimal(hours * settings.WORKER_HOURLY_EXPENSE)
+        return round(expense, 2)
 
     def forecast_content_classes(self, worker=None):
         if worker:
