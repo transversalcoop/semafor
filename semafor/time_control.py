@@ -1,7 +1,6 @@
 import sqlite3
 import datetime
 
-
 from semafor.models import Project, ProjectAlias, WorkAssessment, OutOfBoundsException
 
 
@@ -127,13 +126,16 @@ def update_worker_assessments(worker, dbfile):
                 year = assessment["year"]
                 month = assessment["month"]
                 try:
-                    WorkAssessment.objects.create(
+                    obj, created = WorkAssessment.objects.get_or_create(
                         worker=worker,
                         project=project,
                         year=year,
                         month=month,
-                        assessment=assessment["worked_time"],
+                        defaults={"assessment": assessment["worked_time"]},
                     )
+                    if not created:
+                        obj.assessment += assessment["worked_time"]
+                        obj.save()
                 except OutOfBoundsException as ex:
                     errors.append(f"{project.name} ({year}-{month:02}): {ex}")
 
