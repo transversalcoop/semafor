@@ -73,7 +73,7 @@ class ControlHorari:
         for i in range(len(lst) - 1):
             s, e = lst[i], lst[i + 1]
             if s[1]:
-                k = self.check_types[s[1]]
+                k = self.check_types[s[1]].strip()
                 if k in projects.keys():
                     projects[k] += (e[0] - s[0]) * s[2] / 100
                 else:
