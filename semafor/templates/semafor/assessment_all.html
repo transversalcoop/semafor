@@ -1,13 +1,33 @@
 {% extends "semafor/base.html" %}
 
-{% from 'semafor/_macros.html' import workers_menu, shortcuts_menu, shortcuts_modal, shortcuts_js %}
+{% from 'semafor/_macros.html' import workers_menu, shortcuts_menu, shortcuts_modal, shortcuts_js, table_head %}
 
 {% block submenu %}{{ workers_menu(request, workers, "worker_assessment") }}{% endblock %}
 {% block shortcuts_menu %}{{ shortcuts_menu() }}{% endblock %}
 
 {% block content %}
 {{ csrf_input }}
-{% include 'fragments/assessment_all.html' %}
+<div id="inner-content">
+  <h1>{{ _("Avaluació") }}</h1>
+  <table class="table align-start">
+    <thead>
+      <tr>
+        <th>{{ _("Projecte") }}</th>
+        <th>{{ _("Abast") }}</th>
+        <th>{{ _("Balanç") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in projects %}
+      <tr>
+        <th><a href="{{ url("project_assessment", args=[p.uuid]) }}">{{ p.name }}</a></th>
+        <td>{{ p.amount_span() }}€</td>
+        <td>{{ p.balance() }}€</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {{ shortcuts_modal() }}
 {% endblock %}
 

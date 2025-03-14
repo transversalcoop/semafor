@@ -33,6 +33,7 @@ from semafor.utils import UpdateSingleFieldView
 from semafor.utils import (
     add_projects_forecast_context,
     add_projects_assessment_context,
+    add_worker_projects_assessment_context,
     add_workers_forecast_context,
     add_workers_assessment_context,
     add_economic_balance_context,
@@ -194,7 +195,7 @@ class WorkerAssessmentView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_assessment_context(context, worker=self.get_object())
+        return add_worker_projects_assessment_context(context, self.get_object())
 
 
 class ProjectAssessmentView(StaffRequiredMixin, DetailView):

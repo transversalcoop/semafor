@@ -1,4 +1,5 @@
 import uuid
+import copy
 import decimal
 
 from datetime import timedelta, date
@@ -7,6 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
@@ -224,6 +226,57 @@ class Project(models.Model):
     def active(self, year, month):
         month, starts, ends = (year, month), self.starts_pair(), self.ends_pair()
         return month >= starts and month <= ends
+
+    def amount_span(self):
+        _, _, income, expenses, _, _ = self.economic_balance()
+        income = sum(income[k] for k in income)
+        expenses = sum(expenses[k] for k in expenses)
+        return abs(income) + abs(expenses)
+
+    def balance(self):
+        months, balance_map, _, _, _, _ = self.economic_balance()
+        balance_list = [balance_map.get(ym, 0) for ym in months]
+        try:
+            return balance_list[-1]
+        except IndexError:
+            return 0
+
+    def economic_balance(self):
+        balance, balance_map = 0, {}
+        income, expenses = {}, {}
+        for t in self.transactions.all():
+            ym = t.date.year, t.date.month
+            if t.amount > 0:
+                income.setdefault(ym, decimal.Decimal())
+                income[ym] += t.amount
+            else:
+                expenses.setdefault(ym, decimal.Decimal())
+                expenses[ym] -= t.amount
+
+        other_expenses = copy.deepcopy(expenses)
+        now = timezone.now()
+        present_month = (now.year, now.month)
+        work_expenses = self.compute_assessed_work_expenses_by_months(
+            max_month=present_month
+        )
+        forecasted_work_expenses = self.compute_forecasted_work_expenses_by_months(
+            min_month=present_month
+        )
+        for k, v in forecasted_work_expenses.items():
+            work_expenses.setdefault(k, decimal.Decimal())
+            work_expenses[k] += v
+
+        for k, v in work_expenses.items():
+            expenses.setdefault(k, decimal.Decimal())
+            expenses[k] += v
+
+        months = list(months_range(self.date_start, self.date_end))
+        for ym in months:
+            balance += income.get(ym, 0)
+            balance -= expenses.get(ym, 0)
+            balance_map[ym] = balance
+
+        return months, balance_map, income, expenses, work_expenses, other_expenses
 
 
 class ProjectAlias(models.Model):

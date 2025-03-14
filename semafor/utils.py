@@ -1,5 +1,4 @@
 import io
-import copy
 import redis
 import base64
 import threading
@@ -11,7 +10,6 @@ matplotlib.use("AGG")
 
 import matplotlib.pyplot as plt
 
-from decimal import Decimal
 from datetime import date, datetime, timedelta
 
 from django.urls import reverse
@@ -81,7 +79,7 @@ def yes_no(b):
 def parse_int_safe(x):
     try:
         return int(x)
-    except:
+    except ValueError:
         return 0
 
 
@@ -168,7 +166,17 @@ def add_worked_forecast(context, projects, worker=None):
     }
 
 
-def add_projects_assessment_context(context, worker=None):
+def add_projects_assessment_context(context):
+    projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
+        "workassessment_set"
+    )
+    projects = sorted(projects, key=lambda p: -p.amount_span())
+    context["projects"] = projects
+    context["workers"] = Worker.objects.all()
+    return context
+
+
+def add_worker_projects_assessment_context(context, worker):
     projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
         "workassessment_set__worker"
     )
@@ -178,17 +186,14 @@ def add_projects_assessment_context(context, worker=None):
     context = add_worked_assessment(context, projects, worker=worker)
 
     workassessments = WorkAssessment.objects.all().prefetch_related("project", "worker")
-    if worker:
-        project_assessments = {}
-        for p in projects:
-            project_assessments[p.uuid] = {}
-            for pa in (
-                x for x in workassessments if x.project == p and x.worker == worker
-            ):
-                k = (pa.year, pa.month)
-                project_assessments[p.uuid][k] = pa
+    project_assessments = {}
+    for p in projects:
+        project_assessments[p.uuid] = {}
+        for pa in (x for x in workassessments if x.project == p and x.worker == worker):
+            k = (pa.year, pa.month)
+            project_assessments[p.uuid][k] = pa
 
-        context["project_assessments"] = project_assessments
+    context["project_assessments"] = project_assessments
 
     return context
 
@@ -254,41 +259,9 @@ def add_workers_assessment_context(project):
 
 
 def add_economic_balance_context(context, project):
-    balance, balance_map = 0, {}
-    income, expenses = {}, {}
-    zero = Decimal()
-    for t in project.transactions.all():
-        ym = t.date.year, t.date.month
-        if t.amount > 0:
-            income.setdefault(ym, Decimal())
-            income[ym] += t.amount
-        else:
-            expenses.setdefault(ym, Decimal())
-            expenses[ym] -= t.amount
-
-    other_expenses = copy.deepcopy(expenses)
-    now = timezone.now()
-    present_month = (now.year, now.month)
-    work_expenses = project.compute_assessed_work_expenses_by_months(
-        max_month=present_month
+    months, balance_map, income, expenses, work_expenses, other_expenses = (
+        project.economic_balance()
     )
-    forecasted_work_expenses = project.compute_forecasted_work_expenses_by_months(
-        min_month=present_month
-    )
-    for k, v in forecasted_work_expenses.items():
-        work_expenses.setdefault(k, Decimal())
-        work_expenses[k] += v
-
-    for k, v in work_expenses.items():
-        expenses.setdefault(k, Decimal())
-        expenses[k] += v
-
-    months = list(months_range(project.date_start, project.date_end))
-    for ym in months:
-        balance += income.get(ym, 0)
-        balance -= expenses.get(ym, 0)
-        balance_map[ym] = balance
-
     context["economic_balance"] = balance_map
     context["income"] = income
     context["other_expenses"] = other_expenses
@@ -390,7 +363,7 @@ def update_forecast_pages(worker=None, project=None):
                 add_projects_forecast_context({}),
             )
             async_to_sync(channel_layer.group_send)(
-                f"forecast_all",
+                "forecast_all",
                 {"type": "forecast_update", "content": content},
             )
 

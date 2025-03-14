@@ -66,6 +66,10 @@ table.table td {
     text-align: center;
 }
 
+table.table.align-start td {
+    text-align: start;
+}
+
 table.table.text-start td {
     background: #fff;
     text-align: start;
