@@ -1,10 +1,14 @@
 import redis
 
+from django.conf import settings
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-# TODO extract from settings
-r = redis.Redis(host="redis", port=6379, decode_responses=True)
+r = redis.Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    decode_responses=True,
+)
 r.flushall()
 
 
