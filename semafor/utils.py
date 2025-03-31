@@ -79,7 +79,7 @@ def yes_no(b):
 def parse_int_safe(x):
     try:
         return int(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 
