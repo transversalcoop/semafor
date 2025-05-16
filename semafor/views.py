@@ -29,7 +29,6 @@ from semafor.models import (
     months_range,
 )
 
-from semafor.utils import UpdateSingleFieldView
 from semafor.utils import (
     add_projects_forecast_context,
     add_projects_assessment_context,
@@ -150,18 +149,6 @@ class UpdateProjectConfirmedView(StaffRequiredMixin, IgnoreResponseMixin, Update
         response = super().post(*args, **kwargs)
         update_forecast_pages()
         return response
-
-
-class UpdateProjectDateStartView(StaffRequiredMixin, UpdateSingleFieldView):
-    model = Project
-    fields = ["date_start"]
-    url_name = "update_project_date_start"
-
-
-class UpdateProjectDateEndView(StaffRequiredMixin, UpdateSingleFieldView):
-    model = Project
-    fields = ["date_end"]
-    url_name = "update_project_date_end"
 
 
 class UpdateWorkForecastView(StaffRequiredMixin, UpdateView):

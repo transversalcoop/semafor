@@ -5,12 +5,12 @@ import threading
 
 import matplotlib
 import pandas as pd
+import datetime as dt
 
 matplotlib.use("AGG")
 
 import matplotlib.pyplot as plt
 
-from datetime import date, datetime, timedelta
 
 from django.urls import reverse
 from django.conf import settings
@@ -39,8 +39,8 @@ r = redis.Redis(
 
 
 def previous_month(t):
-    d = date(t.year, t.month, 1)
-    d -= timedelta(3)
+    d = dt.date(t.year, t.month, 1)
+    d -= dt.timedelta(3)
     return d
 
 
@@ -106,9 +106,9 @@ def format_currency(f):
 # Add context utils
 
 
-def add_time_span(context, projects, min_start=None):
-    dates_start = [x.date_start for x in projects]
-    dates_end = [x.date_end for x in projects]
+def add_time_span(context, projects, min_start=None, extra_months=None):
+    dates_start = [x.date_start() for x in projects]
+    dates_end = [x.date_end() for x in projects]
     if len(dates_start) > 0:
         date_start = min(dates_start)
         date_end = max(dates_end)
@@ -117,6 +117,9 @@ def add_time_span(context, projects, min_start=None):
 
         if date_end < date_start:
             date_end = date_start
+
+        if extra_months is not None:
+            date_end += dt.timedelta(days=extra_months * 31)
         context["time_span"] = list(months_range(date_start, date_end))
 
     return context
@@ -124,12 +127,14 @@ def add_time_span(context, projects, min_start=None):
 
 def add_projects_forecast_context(context, worker=None):
     projects = Project.objects.filter(archived=False).prefetch_related(
-        "workforecast_set__worker"
+        "workforecast_set__worker", "workassessment_set"
     )
     context["projects"] = projects
     context["workers"] = Worker.objects.all()
-    now = datetime.now()
-    add_time_span(context, projects, min_start=date(now.year, now.month, 1))
+    now = timezone.now()
+    add_time_span(
+        context, projects, min_start=dt.date(now.year, now.month, 1), extra_months=6
+    )
 
     context = add_worked_forecast(context, projects, worker=worker)
 
@@ -168,7 +173,9 @@ def add_worked_forecast(context, projects, worker=None):
 
 def add_projects_assessment_context(context):
     projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
-        "workassessment_set"
+        "workassessment_set",
+        "workforecast_set",
+        "transactions",
     )
     projects = sorted(projects, key=lambda p: -p.amount_span())
     context["projects"] = projects
@@ -178,7 +185,8 @@ def add_projects_assessment_context(context):
 
 def add_worker_projects_assessment_context(context, worker):
     projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
-        "workassessment_set__worker"
+        "workassessment_set__worker",
+        "workforecast_set",
     )
     context["workers"] = Worker.objects.all()
     context["projects"] = projects
@@ -203,7 +211,7 @@ def add_worked_assessment(context, projects, worker=None):
     for p in projects:
         totals, _ = p.work_assessments(worker=worker)
         for k, v in totals.items():
-            total_worked.setdefault(k, timedelta(0))
+            total_worked.setdefault(k, dt.timedelta(0))
             total_worked[k] += v
 
     return context | {"total_worked_assessment": total_worked}
@@ -233,7 +241,7 @@ def add_dedications(context, worker=None):
 
 def add_workers_forecast_context(project):
     context = {"object": project}
-    context["time_span"] = list(months_range(project.date_start, project.date_end))
+    context["time_span"] = project.forecast_months_range()
     context["workers"] = Worker.objects.all()
     context = add_worked_forecast(context, [project])
     return add_dedications(context)
@@ -241,8 +249,8 @@ def add_workers_forecast_context(project):
 
 def add_workers_assessment_context(project):
     now = timezone.now()
-    assessed_time_span = list(months_range(project.date_start, previous_month(now)))
-    forecasted_time_span = list(months_range(now, project.date_end))
+    assessed_time_span = project.assessment_months_range(end=previous_month(now))
+    forecasted_time_span = project.forecast_months_range(start=now)
     time_span = assessed_time_span + forecasted_time_span
     workers = Worker.objects.all().prefetch_related("workassessment_set__project")
 

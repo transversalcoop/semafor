@@ -1,8 +1,7 @@
 import uuid
 import copy
 import decimal
-
-from datetime import timedelta, date
+import datetime as dt
 
 from django.db import models
 from django.db.models import Q
@@ -55,11 +54,6 @@ class Project(models.Model):
         primary_key=True,
     )
     name = models.CharField(max_length=MAX_LENGTH, verbose_name=_("Nom"))
-    date_start = models.DateField(
-        verbose_name=_("Data d'inici"),
-        validators=[MinValueValidator(date(2020, 1, 1))],
-    )
-    date_end = models.DateField(verbose_name=_("Data de finalització"))
     archived = models.BooleanField(
         default=False, verbose_name=_("Arxivat (s'oculta de totes les pàgines)")
     )
@@ -112,7 +106,7 @@ class Project(models.Model):
 
         totals, explanations = {}, {}
         for k, was in m.items():
-            totals[k] = sum((x.assessment for x in was), start=timedelta(0))
+            totals[k] = sum((x.assessment for x in was), start=dt.timedelta(0))
             explanations[k] = ", ".join(
                 [f"{x.worker.name} ({x.assessment})" for x in was]
             )
@@ -127,19 +121,75 @@ class Project(models.Model):
             ).items()
         )
 
+    def date_start(self):
+        return min(self.first_forecast_date(), self.first_assessment_date())
+
+    def date_end(self):
+        return max(self.last_forecast_date(), self.last_assessment_date())
+
+    def first_forecast_date(self):
+        return self.child_date(0, self.workforecast_set.all())
+
+    def first_assessment_date(self):
+        return self.child_date(0, self.workassessment_set.all())
+
+    def last_forecast_date(self):
+        return self.child_date(-1, self.workforecast_set.all())
+
+    def last_assessment_date(self):
+        return self.child_date(-1, self.workassessment_set.all())
+
+    def child_date(self, index, qs):
+        dates = sorted(qs, key=lambda x: (x.year, x.month))
+        date = timezone.now().date()
+        if len(dates) > 0:
+            d = dates[index]
+            date = dt.date(d.year, d.month, 1)
+        return date
+
+    def months_range(self, dates, start, end):
+        first, last = start, end
+        if len(dates) > 0:
+            first = dates[0]
+            last = dates[-1]
+        date_start = min(start, dt.date(first.year, first.month, 1))
+        date_end = max(
+            end + dt.timedelta(days=6 * 31), dt.date(last.year, last.month, 1)
+        )
+        return list(months_range(date_start, date_end))
+
+    def forecast_months_range(self, start=None):
+        forecasts = sorted(self.workforecast_set.all(), key=lambda x: (x.year, x.month))
+        now = timezone.now().date()
+        if start is None:
+            start = now
+        return self.months_range(forecasts, start, now + dt.timedelta(days=6 * 31))
+
+    def assessment_months_range(self, end=None):
+        assessments = sorted(
+            self.workassessment_set.all(),
+            key=lambda x: (x.year, x.month),
+        )
+        now = timezone.now().date()
+        if end is None:
+            end = now + dt.timedelta(days=31)
+        return self.months_range(assessments, now, end)
+
     def compute_forecasted_work_expenses_by_months(self, worker=None, min_month=None):
         if worker:
-            forecasts = self.workforecast_set.filter(worker=worker)
+            forecasts = [f for f in self.workforecast_set.all() if f.worker == worker]
         else:
             forecasts = self.workforecast_set.all()
 
         if min_month:
             year, month = min_month
-            future_years = Q(year__gt=year)
-            future_months = Q(year=year, month__gte=month)
-            forecasts = forecasts.filter(future_years | future_months)
+            forecasts = [
+                f
+                for f in forecasts
+                if f.year > year or (f.year == year and f.month >= month)
+            ]
 
-        months = list(months_range(self.date_start, self.date_end))
+        months = self.forecast_months_range()
         return {
             (year, month): self.extract_work_expenses_from_forecasts(
                 [f for f in forecasts if f.year == year and f.month == month]
@@ -163,17 +213,21 @@ class Project(models.Model):
 
     def compute_assessed_work_expenses_by_months(self, worker=None, max_month=None):
         if worker:
-            assessments = self.workassessment_set.filter(worker=worker)
+            assessments = [
+                a for a in self.workassessment_set.all() if a.worker == worker
+            ]
         else:
             assessments = self.workassessment_set.all()
 
         if max_month:
             year, month = max_month
-            previous_years = Q(year__lt=year)
-            previous_months = Q(year=year, month__lt=month)
-            assessments = assessments.filter(previous_years | previous_months)
+            assessments = [
+                a
+                for a in assessments
+                if a.year < year or (a.year == year and a.month < month)
+            ]
 
-        months = list(months_range(self.date_start, self.date_end))
+        months = self.assessment_months_range()
         return {
             (year, month): self.extract_work_expenses_from_assessments(
                 [a for a in assessments if a.year == year and a.month == month]
@@ -182,7 +236,7 @@ class Project(models.Model):
         }
 
     def extract_work_expenses_from_assessments(self, assessments):
-        work = sum((x.assessment for x in assessments), start=timedelta(0))
+        work = sum((x.assessment for x in assessments), start=dt.timedelta(0))
         # TODO set this magic value in the Worker, probably computed from its
         # expenses and some parameter inside the Organization configuration
         hours = work.total_seconds() / 3600
@@ -207,25 +261,11 @@ class Project(models.Model):
         else:
             assessments = self.workassessment_set.all()
 
-        if sum((a.assessment for a in assessments), start=timedelta(0)) > timedelta(0):
+        if sum(
+            (a.assessment for a in assessments), start=dt.timedelta(0)
+        ) > dt.timedelta(0):
             return "full"
         return "empty"
-
-    def starts(self, year, month):
-        return self.starts_pair() == (year, month)
-
-    def starts_pair(self):
-        return (self.date_start.year, self.date_start.month)
-
-    def ends(self, year, month):
-        return self.ends_pair() == (year, month)
-
-    def ends_pair(self):
-        return (self.date_end.year, self.date_end.month)
-
-    def active(self, year, month):
-        month, starts, ends = (year, month), self.starts_pair(), self.ends_pair()
-        return month >= starts and month <= ends
 
     def amount_span(self):
         _, _, income, expenses, _, _ = self.economic_balance()
@@ -270,7 +310,11 @@ class Project(models.Model):
             expenses.setdefault(k, decimal.Decimal())
             expenses[k] += v
 
-        months = list(months_range(self.date_start, self.date_end))
+        date_start = min(income.keys() | expenses.keys())
+        date_start = dt.date(*date_start, 1)
+        date_end = max(income.keys() | expenses.keys())
+        date_end = dt.date(*date_end, 1)
+        months = list(months_range(date_start, date_end))
         for ym in months:
             balance += income.get(ym, 0)
             balance -= expenses.get(ym, 0)
@@ -319,7 +363,9 @@ class Worker(models.Model):
         else:
             assessments = self.workassessment_set.all()
 
-        if sum((a.assessment for a in assessments), start=timedelta(0)) > timedelta(0):
+        if sum(
+            (a.assessment for a in assessments), start=dt.timedelta(0)
+        ) > dt.timedelta(0):
             return "full"
         return "empty"
 
@@ -371,14 +417,6 @@ class WorkForecast(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        if (self.year, self.month) < self.project.starts_pair():
-            raise Exception(
-                _("No es pot assignar feina abans del principi del projecte")
-            )
-        if (self.year, self.month) > self.project.ends_pair():
-            raise Exception(
-                _("No es pot assignar feina després del final del projecte")
-            )
         if self.forecast < 0:
             raise Exception(_("Com a mínim cal assignar un 0% de jornada"))
         if self.forecast > 100:
@@ -405,17 +443,6 @@ class WorkAssessment(models.Model):
 
     def __str__(self):
         return f"{self.worker} - {self.project}: {self.year}-{self.month} {self.assessment}"
-
-    def save(self, *args, **kwargs):
-        if (self.year, self.month) < self.project.starts_pair():
-            raise OutOfBoundsException(
-                _("No es pot assignar feina abans del principi del projecte")
-            )
-        if (self.year, self.month) > self.project.ends_pair():
-            raise OutOfBoundsException(
-                _("No es pot assignar feina després del final del projecte")
-            )
-        return super().save(*args, **kwargs)
 
 
 class Tag(models.Model):

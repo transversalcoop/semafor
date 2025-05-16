@@ -1,6 +1,5 @@
-{% from 'semafor/_macros.html' import project_classes %}
 <td
-  class="text-center {{ dedication_intensity(worked, total_worked) }} {{ project_classes(project, year, month) }}"
+  class="text-center {{ dedication_intensity(worked, total_worked) }}"
 >
   {{ format_duration(worked) }}
 </td>

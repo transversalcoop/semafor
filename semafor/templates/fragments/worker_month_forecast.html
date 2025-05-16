@@ -1,7 +1,6 @@
-{% from 'semafor/_macros.html' import project_classes %}
 <td
   id="project-{{ object.project.uuid }}-worker-{{ object.worker.uuid }}-{{ object.year }}-{{ object.month }}"
-  class="text-center clickable smooth {{ dedication_intensity(object.forecast, total_dedication) }} {{ project_classes(object.project, object.year, object.month) }}"
+  class="text-center clickable smooth {{ dedication_intensity(object.forecast, total_dedication) }}"
   hx-get="{{ url("update_work_forecast", args=[object.id]) }}"
   hx-swap="outerHTML"
 >

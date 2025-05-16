@@ -49,11 +49,12 @@ urlpatterns = [
         views.UpdateTransactionWorkersView.as_view(),
         name="update_transaction_workers",
     ),
-    path(
-        "expected_liquidity",
-        views.ExpectedLiquidityView.as_view(),
-        name="expected_liquidity",
-    ),
+    # not done
+    # path(
+    #    "expected_liquidity",
+    #    views.ExpectedLiquidityView.as_view(),
+    #    name="expected_liquidity",
+    # ),
     path(
         "worker/dedication/create/",
         views.CreateWorkerDedicationView.as_view(),
@@ -88,16 +89,6 @@ urlpatterns = [
         "project/<uuid:pk>/update/confirmed/",
         views.UpdateProjectConfirmedView.as_view(),
         name="update_project_confirmed",
-    ),
-    path(
-        "project/<uuid:pk>/update/date-start/",
-        views.UpdateProjectDateStartView.as_view(),
-        name="update_project_date_start",
-    ),
-    path(
-        "project/<uuid:pk>/update/date-end/",
-        views.UpdateProjectDateEndView.as_view(),
-        name="update_project_date_end",
     ),
     path(
         "project-alias/create/",

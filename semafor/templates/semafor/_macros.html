@@ -33,18 +33,17 @@
           {{ _("Moviments") }}
         </a>
       </li>
-      <li class="nav-item">
+      {#      <li class="nav-item">
         {% set link = url("expected_liquidity") %}
         <a class="nav-link {% if link_active(request, link, exact=True) %}active{% endif %}" aria-current="page" href="{{ link }}">
           {{ _("Liquiditat") }}
         </a>
       </li>
+      #}
     </ul>
   </nav>
 </div>
 {% endmacro %}
-
-{% macro project_classes(project, year, month) %}{% if project.starts(year, month) %} project-starts{% endif %}{% if project.ends(year, month) %} project-ends{% endif %}{% endmacro %}
 
 {% macro table_head(title, time_span, el="th") %}
 <tr>
@@ -112,14 +111,12 @@
       {% else %}
         <td
           id="project-{{ project.uuid }}-worker-{{ worker.uuid }}-{{ year }}-{{ month }}"
-          class="text-center {% if project.active(year, month) %}clickable{% endif %} {{ project_classes(project, year, month) }}"
-          {% if project.active(year, month) %}
+          class="text-center clickable"
           hx-post="{{ url("create_work_forecast") }}"
           hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}", "project": "{{ project.uuid }}"}'
           hx-include="[name='csrfmiddlewaretoken']"
           hx-swap="outerHTML"
-          {% endif %}
-          ></td>
+        ></td>
       {% endif %}
     {% else %}
       {% with total_worked=totals[(year, month)], total_dedication=total_dedication[(year, month)], explanation=explanations[(year, month)] %}{% include 'fragments/project_month_forecast.html' %}{% endwith %}
@@ -212,7 +209,7 @@
       {% if pa %}
         {% with object = pa, total_worked=total_worked[(year, month)] %}{% include 'fragments/worker_month_assessment.html' %}{% endwith %}
       {% else %}
-        <td class="text-center {{ project_classes(project, year, month) }}"></td>
+        <td class="text-center"></td>
       {% endif %}
     {% else %}
       {% with worked=totals[(year, month)], total_worked=total_worked[(year, month)], explanation=explanations[(year, month)] %}
@@ -364,8 +361,6 @@ document.addEventListener("keyup", (e) => {
 {# TODO remove if not used from project_forecast #}
 {% macro project_details(project) %}
   <ul class="columns-3">
-    <li><strong>{{ _("Comença:") }}</strong> {{ localize(project.date_start) }}</li>
-    <li><strong>{{ _("Acaba:") }}</strong> {{ localize(project.date_end) }}</li>
     <li><strong>{{ _("Confirmat:") }}</strong> {{ yes_no(project.confirmed) }}</li>
     <li><strong>{{ _("Arxivat:") }}</strong> {{ yes_no(project.archived) }}</li>
     <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ format_currency(project.income) }}</li>
