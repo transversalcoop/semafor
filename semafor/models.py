@@ -4,7 +4,6 @@ import decimal
 import datetime as dt
 
 from django.db import models
-from django.db.models import Q
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
@@ -323,14 +322,6 @@ class Project(models.Model):
         return months, balance_map, income, expenses, work_expenses, other_expenses
 
 
-class ProjectAlias(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    alias = models.CharField(max_length=MAX_LENGTH, unique=True)
-
-    def __str__(self):
-        return f"{self.alias} (alias de «{self.project.name}»)"
-
-
 class Worker(models.Model):
     uuid = models.UUIDField(
         default=uuid.uuid4,
@@ -368,6 +359,26 @@ class Worker(models.Model):
         ) > dt.timedelta(0):
             return "full"
         return "empty"
+
+
+class ProjectAlias(models.Model):
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    alias = models.CharField(max_length=MAX_LENGTH, unique=True)
+
+    class Meta:
+        unique_together = ["worker", "project"]
+
+    def __str__(self):
+        return f"{self.alias} (alias de «{self.project.name}»)"
+
+
+class MissingProjectAlias(models.Model):
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    alias = models.CharField(max_length=MAX_LENGTH, unique=True)
+
+    def __str__(self):
+        return self.alias
 
 
 class WorkerMonthDedication(models.Model):

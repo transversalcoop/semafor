@@ -17,17 +17,15 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import UserPassesTestMixin
 
-
-from semafor.models import (
-    Project,
-    ProjectAlias,
-    Worker,
-    WorkerMonthDedication,
-    WorkForecast,
-    Transaction,
-    ExpectedTransaction,
-    months_range,
-)
+from semafor.models import Project
+from semafor.models import ProjectAlias
+from semafor.models import MissingProjectAlias
+from semafor.models import Worker
+from semafor.models import WorkerMonthDedication
+from semafor.models import WorkForecast
+from semafor.models import Transaction
+from semafor.models import ExpectedTransaction
+from semafor.models import months_range
 
 from semafor.utils import (
     add_projects_forecast_context,
@@ -288,7 +286,8 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
 
             self.extra_context = {"ok": True}
             return super().get(request)
-        except Exception:
+        except Exception as ex:
+            print(f"Could not update worker assessments: {ex}")
             self.extra_context = {"error": True}
             return super().get(request)
 
@@ -356,7 +355,23 @@ class UpdateTransactionWorkersView(StaffRequiredMixin, TemplateView):
 
 class CreateProjectAlias(StaffRequiredMixin, CreateView):
     model = ProjectAlias
-    fields = ["project", "alias"]
+    fields = ["worker", "project", "alias"]
+
+    def dispatch(self, request, *args, **kwargs):
+        self.worker = Worker.objects.get(pk=kwargs["worker_id"])
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse("create_project_alias")
+        try:
+            MissingProjectAlias.objects.get(
+                worker=self.object.worker,
+                alias=self.object.alias,
+            ).delete()
+        except MissingProjectAlias.DoesNotExist:
+            pass
+        return reverse("create_project_alias", args=[self.worker.uuid])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["worker"] = self.worker
+        return context

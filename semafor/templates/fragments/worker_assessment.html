@@ -1,7 +1,15 @@
-{% from 'semafor/_macros.html' import projects_assessment_table, table_head, modal_start, modal_end %}
+{% from 'semafor/_macros.html' import projects_assessment_table, table_head, modal_start, modal_end, missing_aliases_table  %}
 
 <div id="inner-content">
   <h1>{{ _("Avaluació de la treballadora «%(name)s»", name=object.name) }}</h1>
+  {% if missing_projects %}
+  <div class="alert alert-warning">
+    <p>
+      {{ _("Els següents projectes de l'aplicació mòbil no es corresponen a projectes existents a la web:") }}
+    </p>
+    {{ missing_aliases_table(missing_projects, object, projects) }}
+  </div>
+  {% endif %}
   <div>
     <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls de la treballadora") }}

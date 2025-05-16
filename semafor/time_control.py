@@ -1,7 +1,11 @@
 import sqlite3
 import datetime
 
-from semafor.models import Project, ProjectAlias, WorkAssessment, OutOfBoundsException
+from semafor.models import Project
+from semafor.models import ProjectAlias
+from semafor.models import MissingProjectAlias
+from semafor.models import WorkAssessment
+from semafor.models import OutOfBoundsException
 
 
 # This class handles files coming from the following mobile APP:
@@ -113,7 +117,7 @@ def update_worker_assessments(worker, dbfile):
             db_projects[k] = project
         except Project.DoesNotExist:
             try:
-                alias = ProjectAlias.objects.get(alias=k)
+                alias = ProjectAlias.objects.get(alias=k, worker=worker)
                 db_projects[k] = alias.project
             except ProjectAlias.DoesNotExist:
                 missing_projects.add(k)
@@ -138,5 +142,8 @@ def update_worker_assessments(worker, dbfile):
                         obj.save()
                 except OutOfBoundsException as ex:
                     errors.append(f"{project.name} ({year}-{month:02}): {ex}")
+    else:
+        for p in missing_projects:
+            MissingProjectAlias.objects.get_or_create(worker=worker, alias=p)
 
     return missing_projects, errors

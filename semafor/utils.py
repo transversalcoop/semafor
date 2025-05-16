@@ -22,14 +22,14 @@ from django.utils.translation import gettext_lazy as _
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from semafor.models import (
-    Project,
-    Worker,
-    WorkerMonthDedication,
-    WorkForecast,
-    WorkAssessment,
-    months_range,
-)
+
+from semafor.models import Project
+from semafor.models import Worker
+from semafor.models import WorkerMonthDedication
+from semafor.models import WorkForecast
+from semafor.models import WorkAssessment
+from semafor.models import MissingProjectAlias
+from semafor.models import months_range
 
 r = redis.Redis(
     host=settings.REDIS_HOST,
@@ -202,6 +202,7 @@ def add_worker_projects_assessment_context(context, worker):
             project_assessments[p.uuid][k] = pa
 
     context["project_assessments"] = project_assessments
+    context["missing_projects"] = MissingProjectAlias.objects.filter(worker=worker)
 
     return context
 

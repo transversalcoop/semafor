@@ -1,3 +1,4 @@
+{% from "semafor/_macros.html" import missing_aliases_table %}
 {% set href = url("update_worker_assessment", args=[object.uuid]) %}
 {% if ok %}
 <p>{{ _("S'han actualitzat les dades de temps treballats") }}</p>
@@ -22,24 +23,7 @@
   <p>
     {{ _("Els següents projectes no es corresponen a projectes existents a l'aplicació:") }}
   </p>
-  <table class="table mb-2">
-    <thead>
-      <tr>
-        <th>{{ _("Projecte") }}</th>
-        <th>{{ _("Assigna a projecte existent") }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in missing_projects %}
-      <tr>
-        <td class="text-start">{{ p }}</td>
-        <td>
-          {% include "semafor/projectalias_form.html" %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {{ missing_aliases_table(missing_projects, object, projects) }}
   {% endif %}
 
   <form

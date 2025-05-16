@@ -91,7 +91,7 @@ urlpatterns = [
         name="update_project_confirmed",
     ),
     path(
-        "project-alias/create/",
+        "project-alias/<uuid:worker_id>/create/",
         views.CreateProjectAlias.as_view(),
         name="create_project_alias",
     ),
