@@ -5,10 +5,14 @@ import datetime
 
 
 from django.urls import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.utils import IntegrityError
 from django.shortcuts import redirect, render, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
 from django.views.generic import (
+    View,
     TemplateView,
     DetailView,
     ListView,
@@ -269,20 +273,14 @@ class UpdateWorkerAssessmentsView(StaffRequiredMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         try:
-            with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
-                fp.write(request.FILES["checks_file"].read())
-                fp.close()
-
-                missing_projects, errors = update_worker_assessments(
-                    self.worker, fp.name
-                )
-                if len(missing_projects) > 0 or len(errors) > 0:
-                    self.extra_context = {
-                        "projects": Project.objects.all(),
-                        "missing_projects": missing_projects,
-                        "errors": errors,
-                    }
-                    return super().get(request)
+            missing_projects, errors = update_worker_assessments(request, self.worker)
+            if len(missing_projects) > 0 or len(errors) > 0:
+                self.extra_context = {
+                    "projects": Project.objects.all(),
+                    "missing_projects": missing_projects,
+                    "errors": errors,
+                }
+                return super().get(request)
 
             self.extra_context = {"ok": True}
             return super().get(request)
@@ -375,3 +373,37 @@ class CreateProjectAlias(StaffRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context["worker"] = self.worker
         return context
+
+
+# API Views
+
+
+@csrf_exempt
+@require_POST
+def api_update_worker_assessment(request, token):
+    worker = get_object_or_404(Worker, app_token=token)
+    app_id = request.POST.get("user_id")
+    if not app_id:
+        return JsonResponse({"ok": False, "error": "Missing user identifier"})
+
+    # The first to set up the ID wins
+    if not worker.app_id:
+        worker.app_id = app_id
+        worker.save()
+
+    if app_id != worker.app_id:
+        return JsonResponse({"ok": False, "error": "Wrong user identifier"})
+
+    try:
+        missing_projects, errors = update_worker_assessments(request, worker)
+        if len(missing_projects) > 0 or len(errors) > 0:
+            res = {
+                "ok": False,
+                "missing_projects": missing_projects,
+                "errors": errors,
+            }
+            return JsonResponse(res)
+        return JsonResponse({"ok": True})
+    except Exception as ex:
+        print(f"Could not update worker assessments from api: {ex}")
+        return JsonResponse({"error": True})

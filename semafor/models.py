@@ -1,6 +1,7 @@
 import uuid
 import copy
 import decimal
+import secrets
 import datetime as dt
 
 from django.db import models
@@ -329,12 +330,27 @@ class Worker(models.Model):
         primary_key=True,
     )
     name = models.CharField(max_length=MAX_LENGTH, verbose_name=_("Nom"))
+    app_token = models.CharField(
+        max_length=100,
+        verbose_name=_("Token d'autorització per a la APP"),
+        unique=True,
+    )
+    app_id = models.CharField(
+        max_length=MAX_LENGTH,
+        verbose_name=_("Identificador de l'usuari a la APP"),
+        null=True,
+    )
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.app_token:
+            self.app_token = secrets.token_urlsafe(50)
+        return super().save(*args, **kwargs)
 
     def forecast_content_classes(self, project=None):
         if project:

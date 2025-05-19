@@ -29,6 +29,11 @@ urlpatterns = [
         name="update_worker_assessment",
     ),
     path(
+        "assessment/worker/<str:token>/update/",
+        views.UpdateWorkerAssessmentsView.as_view(),
+        name="update_worker_assessment",
+    ),
+    path(
         "assessment/project/<uuid:pk>/",
         views.ProjectAssessmentView.as_view(),
         name="project_assessment",

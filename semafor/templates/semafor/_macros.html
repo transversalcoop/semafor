@@ -246,54 +246,27 @@
 
 {% macro shortcuts_modal() %}
   {{ modal_start("shortcutsModal", _("Dreceres de teclat")) }}
+  {% set controls = [
+     {"id": "toggleControls", "code": "c", "label": _("Mostra i amaga els controls addicionals")},
+     {"id": "toggleNumbers", "code": "n", "label": _("Mostra i amaga els números de la taula")},
+     {"id": "toggleEmpty", "code": "b", "label": _("Amaga files buides (sense cap valor)")},
+     {"id": "toggleFull", "code": "p", "label": _("Amaga files plenes (amb algun valor)")},
+     {"id": "toggleSmallFont", "code": "m", "label": _("Fes menuda la lletra")},
+  ] %}
   <dl>
     <dt><code>?</code></dt>
     <dd>{{ _("Obre la finestra de dreceres de teclat") }}</dd>
-    <dt><code>c</code></dt>
+    {% for c in controls %}
+    <dt><code>{{ c.code }}</code></dt>
     <dd>
       <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="showControlsSwitch" onchange="toggleControls(event.target.checked)">
-        <label class="form-check-label" for="showControlsSwitch">
-          {{ _("Mostra i amaga els controls addicionals") }}
+        <input class="form-check-input" type="checkbox" role="switch" id="{{ c.id }}Switch" onchange="{{ c.id }}(event.target.checked)">
+        <label class="form-check-label" for="{{ c.id }}Switch">
+          {{ c.label }}
         </label>
       </div>
     </dd>
-    <dt><code>n</code></dt>
-    <dd>
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="showNumbersSwitch" onchange="toggleNumbers(event.target.checked)">
-        <label class="form-check-label" for="showNumbersSwitch">
-          {{ _("Mostra i amaga els números de la taula") }}
-        </label>
-      </div>
-    </dd>
-    <dt><code>b</code></dt>
-    <dd>
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="hideEmptySwitch" onchange="toggleEmpty(!event.target.checked)">
-        <label class="form-check-label" for="hideEmptySwitch">
-          {{ _("Amaga files buides (sense cap valor)") }}
-        </label>
-      </div>
-    </dd>
-    <dt><code>p</code></dt>
-    <dd>
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="hideFullSwitch" onchange="toggleFull(!event.target.checked)">
-        <label class="form-check-label" for="hideFullSwitch">
-          {{ _("Amaga files plenes (amb algun valor)") }}
-        </label>
-      </div>
-    </dd>
-    <dt><code>m</code></dt>
-    <dd>
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="smallFontSwitch" onchange="toggleSmallFont(event.target.checked)">
-        <label class="form-check-label" for="smallFontSwitch">
-          {{ _("Fes menuda la lletra") }}
-        </label>
-      </div>
-    </dd>
+    {% endfor %}
   </dl>
   {{ modal_end() }}
 {% endmacro %}
@@ -318,10 +291,6 @@
 
 {% macro shortcuts_js() %}
 const shortcutsModal = new bootstrap.Modal("#shortcutsModal")
-const showControlsSwitch = document.getElementById("showControlsSwitch")
-const showNumbersSwitch = document.getElementById("showNumbersSwitch")
-const hideEmptySwitch = document.getElementById("hideEmptySwitch")
-const hideFullSwitch = document.getElementById("hideFullSwitch")
 
 var ctrlDown = false;
 const ctrlKey = 17,
@@ -350,11 +319,11 @@ document.addEventListener("keyup", (e) => {
   if (e.keyCode == ctrlKey)     ctrDown = false;
   if (e.keyCode == questionKey) shortcutsModal.show();
 
-  handleKey(e, keyc, showControlsSwitch, toggleControls);
-  handleKey(e, keyn, showNumbersSwitch, toggleNumbers);
-  handleKey(e, keyb, hideEmptySwitch, toggleEmpty);
-  handleKey(e, keyp, hideFullSwitch, toggleFull);
-  handleKey(e, keym, smallFontSwitch, toggleSmallFont);
+  handleKey(e, keyc, toggleControlsSwitch, toggleControls);
+  handleKey(e, keyn, toggleNumbersSwitch, toggleNumbers);
+  handleKey(e, keyb, toggleEmptySwitch, toggleEmpty);
+  handleKey(e, keyp, toggleFullSwitch, toggleFull);
+  handleKey(e, keym, toggleSmallFontSwitch, toggleSmallFont);
 })
 {% endmacro %}
 

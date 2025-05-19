@@ -249,7 +249,7 @@ def add_workers_forecast_context(project):
 
 
 def add_workers_assessment_context(project):
-    now = timezone.now()
+    now = timezone.now().date()
     assessed_time_span = project.assessment_months_range(end=previous_month(now))
     forecasted_time_span = project.forecast_months_range(start=now)
     time_span = assessed_time_span + forecasted_time_span

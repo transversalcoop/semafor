@@ -1,5 +1,6 @@
 import sqlite3
 import datetime
+import tempfile
 
 from semafor.models import Project
 from semafor.models import ProjectAlias
@@ -107,7 +108,15 @@ class ControlHorari:
         return new_projects
 
 
-def update_worker_assessments(worker, dbfile):
+def update_worker_assessments(request, worker):
+    with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+        fp.write(request.FILES["checks_file"].read())
+        fp.close()
+
+        return update_worker_assessments_aux(worker, fp.name)
+
+
+def update_worker_assessments_aux(worker, dbfile):
     WorkAssessment.objects.filter(worker=worker).delete()
     projects = ControlHorari(dbfile).get_projects_worked_time()
     db_projects, missing_projects = {}, set()

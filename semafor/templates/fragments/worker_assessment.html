@@ -14,8 +14,11 @@
     <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls de la treballadora") }}
     </a>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal" class="me-3">
       {{ _("Actualitza les dades de control horari") }}
+    </a>
+    <a href="{{ url("api_update_worker_assessment", args=[object.app_token]) }}">
+      {{ _("Copia aquest enllaç per configurar-lo a la APP de Control Horari") }}
     </a>
   </div>
   <table class="table">
