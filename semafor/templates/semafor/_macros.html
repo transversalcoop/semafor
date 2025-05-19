@@ -83,7 +83,7 @@
 {% endmacro %}
 
 {% macro project_forecast_row(project, time_span, total_dedication, worker=None, project_forecasts=None, worker_dedications=None, confirmed=True) %}
-<tr class="{{ project.forecast_content_classes(worker) }}">
+<tr class="{{ project.forecast_content_classes(time_span, worker) }}">
   <th class="text-nowrap">
     {% if confirmed %}
     <i
@@ -127,7 +127,7 @@
 
 {% macro workers_forecast_table(project, workers, time_span, total_worked, worker_dedications, total_dedication) %}
   {% for worker in workers %}
-  <tr class="{{ worker.forecast_content_classes(project) }}">
+  <tr class="{{ worker.forecast_content_classes(time_span, project) }}">
     <th>
       <a href="{{ url("worker_forecast", args=[worker.uuid]) }}">{{ worker }}</a>
     </th>
@@ -152,7 +152,7 @@
 
 {% macro workers_assessment_table(project, workers, assessed_time_span, forecasted_time_span, total_worked_assessment, total_worked_forecast, worker_dedications, total_dedication) %}
   {% for worker in workers %}
-  <tr class="{{ worker.assessment_content_classes(project) }}">
+  <tr class="{{ worker.assessment_content_classes(assessed_time_span + forecasted_time_span, project) }}">
     <th>
       <a href="{{ url("worker_assessment", args=[worker.uuid]) }}">{{ worker }}</a>
     </th>
@@ -198,7 +198,7 @@
 {% endmacro %}
 
 {% macro project_assessment_row(project, time_span, total_worked, worker=None, project_assessments=None) %}
-<tr class="{{ project.assessment_content_classes(worker) }}">
+<tr class="{{ project.assessment_content_classes(time_span, worker) }}">
   <th class="text-nowrap">
     <a href="{{ url("project_assessment", args=[project.uuid]) }}">{{ project }}</a>
   </th>

@@ -243,17 +243,19 @@ class Project(models.Model):
         expense = decimal.Decimal(hours * settings.WORKER_HOURLY_EXPENSE)
         return round(expense, 2)
 
-    def forecast_content_classes(self, worker=None):
+    def forecast_content_classes(self, time_span, worker=None):
+        time_span = set(time_span)
         if worker:
             forecasts = (x for x in self.workforecast_set.all() if x.worker == worker)
         else:
             forecasts = self.workforecast_set.all()
 
-        if sum([a.forecast for a in forecasts]) > 0:
+        if sum([a.forecast for a in forecasts if (a.year, a.month) in time_span]) > 0:
             return "full"
         return "empty"
 
-    def assessment_content_classes(self, worker=None):
+    def assessment_content_classes(self, time_span, worker=None):
+        time_span = set(time_span)
         if worker:
             assessments = (
                 x for x in self.workassessment_set.all() if x.worker == worker
@@ -262,7 +264,8 @@ class Project(models.Model):
             assessments = self.workassessment_set.all()
 
         if sum(
-            (a.assessment for a in assessments), start=dt.timedelta(0)
+            (a.assessment for a in assessments if (a.year, a.month) in time_span),
+            start=dt.timedelta(0),
         ) > dt.timedelta(0):
             return "full"
         return "empty"
@@ -352,17 +355,19 @@ class Worker(models.Model):
             self.app_token = secrets.token_urlsafe(50)
         return super().save(*args, **kwargs)
 
-    def forecast_content_classes(self, project=None):
+    def forecast_content_classes(self, time_span, project=None):
+        time_span = set(time_span)
         if project:
             forecasts = (x for x in self.workforecast_set.all() if x.project == project)
         else:
             forecasts = self.workforecast_set.all()
 
-        if sum([a.forecast for a in forecasts]) > 0:
+        if sum([a.forecast for a in forecasts if (a.year, a.month) in time_span]) > 0:
             return "full"
         return "empty"
 
-    def assessment_content_classes(self, project=None):
+    def assessment_content_classes(self, time_span, project=None):
+        time_span = set(time_span)
         if project:
             assessments = (
                 x for x in self.workassessment_set.all() if x.project == project
@@ -371,7 +376,8 @@ class Worker(models.Model):
             assessments = self.workassessment_set.all()
 
         if sum(
-            (a.assessment for a in assessments), start=dt.timedelta(0)
+            (a.assessment for a in assessments if (a.year, a.month) in time_span),
+            start=dt.timedelta(0),
         ) > dt.timedelta(0):
             return "full"
         return "empty"
