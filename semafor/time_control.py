@@ -43,9 +43,11 @@ class ControlHorari:
     def discard_dangling_checks(self):
         sql = "SELECT check_type_id FROM checks ORDER BY timestamp DESC LIMIT 1;"
         self.cur.execute(sql)
-        while self.cur.fetchone()[0] is not None:
+        row = self.cur.fetchone()
+        while row is not None and len(row) > 0 and row[0] is not None:
             self.cur.execute("DELETE FROM checks ORDER BY timestamp DESC LIMIT 1;")
             self.cur.execute(sql)
+            row = self.cur.fetchone()
 
     def get_check_types_names(self):
         self.check_types = {}
