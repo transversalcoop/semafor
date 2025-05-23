@@ -4,7 +4,7 @@ import tempfile
 import datetime
 
 
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse
 from django.db.utils import IntegrityError
 from django.shortcuts import redirect, render, get_object_or_404
@@ -17,6 +17,7 @@ from django.views.generic import (
     ListView,
     CreateView,
     UpdateView,
+    DeleteView,
 )
 from django.contrib.auth.mixins import UserPassesTestMixin
 
@@ -350,12 +351,23 @@ class UpdateTransactionWorkersView(StaffRequiredMixin, TemplateView):
         return super().get(request)
 
 
+class ListProjectAlias(StaffRequiredMixin, ListView):
+    model = ProjectAlias
+
+    def dispatch(self, request, *args, **kwargs):
+        self.worker = get_object_or_404(Worker, pk=kwargs["worker_id"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(worker=self.worker)
+
+
 class CreateProjectAlias(StaffRequiredMixin, CreateView):
     model = ProjectAlias
     fields = ["worker", "project", "alias"]
 
     def dispatch(self, request, *args, **kwargs):
-        self.worker = Worker.objects.get(pk=kwargs["worker_id"])
+        self.worker = get_object_or_404(Worker, pk=kwargs["worker_id"])
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
@@ -372,6 +384,11 @@ class CreateProjectAlias(StaffRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context["worker"] = self.worker
         return context
+
+
+class DeleteProjectAlias(StaffRequiredMixin, DeleteView):
+    model = ProjectAlias
+    success_url = reverse_lazy("ignore")
 
 
 # API Views

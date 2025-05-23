@@ -11,11 +11,15 @@
   </div>
   {% endif %}
   <div>
-    <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
-      {{ _("Edita els detalls de la treballadora") }}
-    </a>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal" class="me-3">
-      {{ _("Actualitza les dades de control horari") }}
+    <a
+      href="#"
+      data-bs-toggle="modal"
+      data-bs-target="#aliasModal"
+      class="me-3"
+      hx-get="{{ url("get_project_aliases", args=[object.uuid]) }}"
+      hx-target="#aliasModal .modal-body"
+    >
+      {{ _("Veure alies dels projectes") }}
     </a>
     <a href="{{ url("api_update_worker_assessment", args=[object.app_token]) }}">
       {{ _("Copia aquest enllaç per configurar-lo a la APP de Control Horari") }}
@@ -30,8 +34,7 @@
     </tbody>
   </table>
 
-  {{ modal_start("uploadFileModal", _("Actualitza les dades de control horari")) }}
-  {% include "fragments/update_worker_assessment.html" %}
+  {{ modal_start("aliasModal", _("Alies dels projectes")) }}
   {{ modal_end() }}
 </div>
 

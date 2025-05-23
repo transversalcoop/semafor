@@ -1,0 +1,27 @@
+<table class="table align-start">
+  <thead>
+    <tr>
+      <th>{{ _("Alias") }}</th>
+      <th>{{ _("Projecte") }}</th>
+      <th>{{ _("Esborra") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for alias in object_list %}
+    <tr>
+      <td>{{ alias.alias }}</td>
+      <td>{{ alias.project }}</td>
+      <td>
+        <button
+          class="btn btn-danger"
+          hx-post="{{ url("delete_project_alias", args=[alias.id]) }}"
+          hx-target="closest tr"
+          hx-swap="delete"
+        >
+          <i class="bi-trash"></i>
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

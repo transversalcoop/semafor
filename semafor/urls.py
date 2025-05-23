@@ -96,9 +96,19 @@ urlpatterns = [
         name="update_project_confirmed",
     ),
     path(
+        "project-alias/<uuid:worker_id>/",
+        views.ListProjectAlias.as_view(),
+        name="get_project_aliases",
+    ),
+    path(
         "project-alias/<uuid:worker_id>/create/",
         views.CreateProjectAlias.as_view(),
         name="create_project_alias",
+    ),
+    path(
+        "project-alias/<int:pk>/delete/",
+        views.DeleteProjectAlias.as_view(),
+        name="delete_project_alias",
     ),
 ]
 

@@ -389,7 +389,7 @@ class ProjectAlias(models.Model):
     alias = models.CharField(max_length=MAX_LENGTH, unique=True)
 
     class Meta:
-        unique_together = ["worker", "project"]
+        unique_together = ["worker", "alias"]
 
     def __str__(self):
         return f"{self.alias} (alias de «{self.project.name}»)"
