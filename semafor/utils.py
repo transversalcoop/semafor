@@ -106,7 +106,13 @@ def format_currency(f):
 # Add context utils
 
 
-def add_time_span(context, projects, min_start=None, extra_months=None):
+def add_time_span(
+    context,
+    projects,
+    min_start=None,
+    extra_months=None,
+    force_start=None,
+):
     dates_start = [x.date_start() for x in projects]
     dates_end = [x.date_end() for x in projects]
     if len(dates_start) > 0:
@@ -120,12 +126,15 @@ def add_time_span(context, projects, min_start=None, extra_months=None):
 
         if extra_months is not None:
             date_end += dt.timedelta(days=extra_months * 31)
+
+        if force_start:
+            date_start = force_start
         context["time_span"] = list(months_range(date_start, date_end))
 
     return context
 
 
-def add_projects_forecast_context(context, worker=None):
+def add_projects_forecast_context(context, worker=None, force_start=None):
     projects = Project.objects.filter(archived=False).prefetch_related(
         "workforecast_set__worker", "workassessment_set"
     )
@@ -133,7 +142,11 @@ def add_projects_forecast_context(context, worker=None):
     context["workers"] = Worker.objects.all()
     now = timezone.now()
     add_time_span(
-        context, projects, min_start=dt.date(now.year, now.month, 1), extra_months=6
+        context,
+        projects,
+        min_start=dt.date(now.year, now.month, 1),
+        extra_months=6,
+        force_start=force_start,
     )
 
     context = add_worked_forecast(context, projects, worker=worker)

@@ -1,7 +1,7 @@
 import copy
 import decimal
 import tempfile
-import datetime
+import datetime as dt
 
 
 from django.urls import reverse, reverse_lazy
@@ -74,18 +74,34 @@ class ForecastView(StaffRequiredMixin, ListView):
     model = Project
     template_name = "semafor/forecast_all.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            self.start = dt.datetime.strptime(request.GET.get("start"), "%Y-%m").date()
+        except Exception:
+            self.start = None
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_forecast_context(context)
+        return add_projects_forecast_context(context, force_start=self.start)
 
 
 class WorkerForecastView(StaffRequiredMixin, DetailView):
     model = Worker
     template_name = "semafor/worker_forecast.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            self.start = dt.datetime.strptime(request.GET.get("start"), "%Y-%m").date()
+        except Exception:
+            self.start = None
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return add_projects_forecast_context(context, worker=self.get_object())
+        return add_projects_forecast_context(
+            context, worker=self.get_object(), force_start=self.start
+        )
 
 
 class ProjectForecastView(StaffRequiredMixin, DetailView):
@@ -212,12 +228,12 @@ class ExpectedLiquidityView(StaffRequiredMixin, ListView):
     template_name = "semafor/expected_liquidity.html"
 
     def get_queryset(self):
-        until = datetime.date(2025, 12, 1)
+        until = dt.date(2025, 12, 1)
         lst = list(super().get_queryset())
         repeated = []
         for x in lst:
             if x.repeat == "MONTHLY":
-                start = datetime.date(x.year, x.month, 1)
+                start = dt.date(x.year, x.month, 1)
                 for month in months_range(start, until):
                     repetition = copy.deepcopy(x)
                     repetition.year, repetition.month = month
