@@ -90,14 +90,12 @@
       class="bi-chevron-double-down text-danger clickable controls"
       hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
       hx-vals='{"confirmed": false}'
-      hx-include="[name='csrfmiddlewaretoken']"
     ></i>
     {% else %}
     <i
       class="bi-chevron-double-up text-success clickable controls"
       hx-post="{{ url("update_project_confirmed", args=[project.uuid]) }}"
       hx-vals='{"confirmed": true}'
-      hx-include="[name='csrfmiddlewaretoken']"
     ></i>
     {% endif %}
     <a href="{{ url("project_forecast", args=[project.uuid]) }}">{{ project }}</a>
@@ -114,7 +112,6 @@
           class="text-center clickable"
           hx-post="{{ url("create_work_forecast") }}"
           hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ worker.uuid }}", "project": "{{ project.uuid }}"}'
-          hx-include="[name='csrfmiddlewaretoken']"
           hx-swap="outerHTML"
         ></td>
       {% endif %}

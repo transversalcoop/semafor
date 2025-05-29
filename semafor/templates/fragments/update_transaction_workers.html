@@ -5,7 +5,6 @@
     name="worker"
     class="form-select"
     hx-post="{{ href }}"
-    hx-include="[name='csrfmiddlewaretoken']"
     hx-target="closest td"
   >
     <option value="">{{ _("Selecciona una treballadora") }}</option>
@@ -23,7 +22,6 @@
       <i
         class="bi-x-lg clickable"
         hx-delete="{{ href }}"
-        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
         hx-target="closest td"
         hx-swap="outerHTML"
       ></i>

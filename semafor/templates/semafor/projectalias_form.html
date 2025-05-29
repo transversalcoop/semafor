@@ -2,7 +2,6 @@
   name="project"
   class="form-select"
   hx-post="{{ url("create_project_alias", args=[worker.uuid]) }}"
-  hx-include="[name='csrfmiddlewaretoken']"
   hx-target="closest tr"
   hx-swap="delete"
   hx-vals='{"alias": "{{ p }}", "worker": "{{ worker.uuid }}"}'

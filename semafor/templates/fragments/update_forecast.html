@@ -9,7 +9,6 @@
     value="{{ object.forecast }}"
     class="form-control form-control-sm w-5rem"
     hx-post="{{ url("update_work_forecast", args=[object.id]) }}"
-    hx-include="[name='csrfmiddlewaretoken']"
     hx-trigger="keyup[key=='Enter'], blur"
     hx-swap="outerHTML"
     hx-target="closest td"

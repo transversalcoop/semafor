@@ -23,7 +23,6 @@
             class="text-center clickable"
             hx-post="{{ url("create_worker_dedication") }}"
             hx-vals='{"year": {{ year }}, "month": {{ month }}, "worker": "{{ object.uuid }}"}'
-            hx-include="[name='csrfmiddlewaretoken']"
             hx-swap="outerHTML"
           ></td>
           {% endif %}

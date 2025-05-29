@@ -3,7 +3,6 @@
   {{ csrf_input }}
   <input
     hx-post="{{ post_url }}"
-    hx-include="[name='csrfmiddlewaretoken']"
     hx-swap="outerHTML"
     hx-trigger="keyup[key=='Enter']"
     hx-target="closest span"
