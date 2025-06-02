@@ -10,13 +10,18 @@ from semafor.models import WorkAssessment
 class ProjectAdmin(admin.ModelAdmin):
     model = Project
     fields = (
-        ("name", "income"),
+        ("name",),
         ("archived", "confirmed"),
     )
 
 
+class WorkerAdmin(admin.ModelAdmin):
+    model = Worker
+    fields = ("name",)
+
+
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(Worker, WorkerAdmin)
 admin.site.register(ProjectAlias)
-admin.site.register(Worker)
 admin.site.register(ExpectedTransaction)
 admin.site.register(WorkAssessment)

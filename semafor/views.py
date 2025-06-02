@@ -431,8 +431,8 @@ def api_update_worker_assessment(request, token):
         if len(missing_projects) > 0 or len(errors) > 0:
             res = {
                 "ok": False,
-                "missing_projects": missing_projects,
-                "errors": errors,
+                "missing_projects": list(missing_projects),
+                "errors": list(errors),
             }
             return JsonResponse(res)
         return JsonResponse({"ok": True})

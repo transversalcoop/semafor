@@ -32,6 +32,9 @@
         "DJANGO_MANAGERS=root:root@localhost",
         "DJANGO_STAGING_ENVIRONMENT_NAME=dev",
         "DJANGO_REDIS_HOST=redis",
+        "DJANGO_MONTH_WORKED_HOURS=140",
+        "DJANGO_WORKER_MONTH_COST=2500",
+        "DJANGO_PRODUCTIVE_TIME_FRACTION=0.638",
       ]
     }
   }

@@ -60,11 +60,6 @@ class Project(models.Model):
     confirmed = models.BooleanField(
         default=False, verbose_name=_("Confirmat (segur que s'executarà)")
     )
-    income = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name=_("Ingressos esperats pel total del projecte (en €)"),
-    )
 
     class Meta:
         ordering = ["name"]
@@ -147,7 +142,7 @@ class Project(models.Model):
             date = dt.date(d.year, d.month, 1)
         return date
 
-    def months_range(self, dates, start, end):
+    def months_range(self, dates, start, end, force_start=None, force_end=None):
         first, last = start, end
         if len(dates) > 0:
             first = dates[0]
@@ -156,14 +151,19 @@ class Project(models.Model):
         date_end = max(
             end + dt.timedelta(days=6 * 31), dt.date(last.year, last.month, 1)
         )
+        if force_start:
+            date_start = force_start
+        if force_end:
+            date_end = force_end
+
         return list(months_range(date_start, date_end))
 
-    def forecast_months_range(self, start=None):
+    def forecast_months_range(self, start=None, force_start=None):
         forecasts = sorted(self.workforecast_set.all(), key=lambda x: (x.year, x.month))
         now = timezone.now().date()
         if start is None:
             start = now
-        return self.months_range(forecasts, start, now + dt.timedelta(days=6 * 31))
+        return self.months_range(forecasts, start, now, force_start=force_start)
 
     def assessment_months_range(self, end=None):
         assessments = sorted(
@@ -173,7 +173,7 @@ class Project(models.Model):
         now = timezone.now().date()
         if end is None:
             end = now + dt.timedelta(days=31)
-        return self.months_range(assessments, now, end)
+        return self.months_range(assessments, now, end, force_end=end)
 
     def compute_forecasted_work_expenses_by_months(self, worker=None, min_month=None):
         if worker:

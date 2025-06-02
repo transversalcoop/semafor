@@ -264,7 +264,7 @@ def add_workers_forecast_context(project):
 def add_workers_assessment_context(project):
     now = timezone.now().date()
     assessed_time_span = project.assessment_months_range(end=previous_month(now))
-    forecasted_time_span = project.forecast_months_range(start=now)
+    forecasted_time_span = project.forecast_months_range(start=now, force_start=now)
     time_span = assessed_time_span + forecasted_time_span
     workers = Worker.objects.all().prefetch_related("workassessment_set__project")
 

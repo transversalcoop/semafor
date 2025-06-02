@@ -329,7 +329,6 @@ document.addEventListener("keyup", (e) => {
   <ul class="columns-3">
     <li><strong>{{ _("Confirmat:") }}</strong> {{ yes_no(project.confirmed) }}</li>
     <li><strong>{{ _("Arxivat:") }}</strong> {{ yes_no(project.archived) }}</li>
-    <li><strong>{{ _("Ingressos previstos:") }}</strong> {{ format_currency(project.income) }}</li>
     <li><strong>{{ _("Treball previst:") }}</strong> {{ format_currency(project.compute_forecasted_work_expenses()) }}</li>
     <li><strong>{{ _("Treball fet:") }}</strong> {{ format_currency(project.compute_assessed_work_expenses()) }}</li>
   </ul>
