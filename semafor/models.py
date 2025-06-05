@@ -386,7 +386,7 @@ class Worker(models.Model):
 class ProjectAlias(models.Model):
     worker = models.ForeignKey(Worker, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    alias = models.CharField(max_length=MAX_LENGTH, unique=True)
+    alias = models.CharField(max_length=MAX_LENGTH)
 
     class Meta:
         unique_together = ["worker", "alias"]
