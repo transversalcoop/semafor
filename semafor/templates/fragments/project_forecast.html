@@ -6,6 +6,9 @@
     <a href="{{ url("admin:semafor_project_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls del projecte") }}
     </a>
+    <a href="{{ url("download_project_forecast_csv", args=[object.uuid]) }}" target="_blank" download="previsio.csv">
+      {{ _("Descarrega les dades de previsió") }}
+    </a>
   </div>
   {{ project_details(object) }}
   <table class="table">

@@ -6,6 +6,9 @@
     <a href="{{ url("admin:semafor_worker_change", args=[object.uuid]) }}" class="me-3">
       {{ _("Edita els detalls de la treballadora") }}
     </a>
+    <a href="{{ url("download_worker_forecast_csv", args=[object.uuid]) }}" target="_blank" download="previsio.csv">
+      {{ _("Descarrega les dades de previsió") }}
+    </a>
   </div>
   <table class="table">
     <thead>

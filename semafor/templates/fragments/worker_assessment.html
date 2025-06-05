@@ -21,8 +21,11 @@
     >
       {{ _("Veure alies dels projectes") }}
     </a>
-    <a href="{{ url("api_update_worker_assessment", args=[object.app_token]) }}">
+    <a href="{{ url("api_update_worker_assessment", args=[object.app_token]) }}" class="me-3">
       {{ _("Copia aquest enllaç per configurar-lo a la APP de Control Horari") }}
+    </a>
+    <a href="{{ url("download_worker_assessment_csv", args=[object.uuid]) }}" target="_blank" download="avaluacio.csv">
+      {{ _("Descarrega les dades d'avaluació") }}
     </a>
   </div>
   <table class="table">

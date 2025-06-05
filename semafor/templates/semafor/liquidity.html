@@ -11,8 +11,11 @@
   {{ csrf_input }}
   <h1>{{ _("Moviments") }}</h1>
   <div>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+    <a href="#" data-bs-toggle="modal" data-bs-target="#uploadFileModal" class="me-3">
       {{ _("Actualitza les dades de liquiditat") }}
+    </a>
+    <a href="{{ url("download_liquidity_csv") }}" target="_blank" download="liquiditat.csv">
+      {{ _("Descarrega les dades de liquiditat") }}
     </a>
   </div>
   <table class="table text-start">

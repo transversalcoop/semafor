@@ -11,6 +11,11 @@
 
 <div id="inner-content">
   <h1>{{ _("Avaluació del projecte «%(name)s»", name=object.name) }}</h1>
+  <div>
+    <a href="{{ url("download_project_assessment_csv", args=[object.uuid]) }}" target="_blank" download="avaluacio.csv">
+      {{ _("Descarrega les dades d'avaluació") }}
+    </a>
+  </div>
   <table class="table">
     <thead>
       {{ table_head(_("Treballadores"), time_span) }}

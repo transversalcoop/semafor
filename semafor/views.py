@@ -1,3 +1,4 @@
+import csv
 import copy
 import decimal
 import tempfile
@@ -12,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from django.views.generic import (
+    View,
     TemplateView,
     DetailView,
     ListView,
@@ -32,6 +34,8 @@ from semafor.models import ExpectedTransaction
 from semafor.models import months_range
 
 from semafor.utils import (
+    format_duration,
+    format_month,
     add_projects_forecast_context,
     add_projects_assessment_context,
     add_worker_projects_assessment_context,
@@ -55,6 +59,26 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
     def test_func(self):
         return self.request.user.is_staff
+
+
+class CSVView(View):
+    headers = None
+
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(
+            content_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{self.filename}"'},
+        )
+        writer = csv.writer(response)
+        if self.headers:
+            writer.writerow(self.headers)
+        for row in self.get_data():
+            writer.writerow(row)
+
+        return response
+
+    def format_number(self, n):
+        return f"{n:.2f}".replace(".", ",")
 
 
 class IgnoreResponseMixin:
@@ -405,6 +429,133 @@ class CreateProjectAlias(StaffRequiredMixin, CreateView):
 class DeleteProjectAlias(StaffRequiredMixin, DeleteView):
     model = ProjectAlias
     success_url = reverse_lazy("ignore")
+
+
+class DownloadLiquidityCSVView(StaffRequiredMixin, CSVView):
+    filename = "liquiditat.csv"
+    headers = [
+        "Apunt",
+        "Data",
+        "Concepte",
+        "Import",
+        "Saldo",
+        "Projectes",
+        "Treballadores",
+    ]
+
+    def get_data(self):
+        qs = Transaction.objects.all().prefetch_related("projects", "workers")
+        for transaction in qs:
+            project = transaction.projects.first()
+            if project:
+                project = project.name
+            worker = transaction.workers.first()
+            if worker:
+                worker = worker.name
+
+            yield [
+                transaction.id,
+                transaction.date,
+                transaction.concept,
+                self.format_number(transaction.amount),
+                self.format_number(transaction.balance),
+                project,
+                worker,
+            ]
+
+
+class DownloadForecastCSVView(StaffRequiredMixin, CSVView):
+    filename = "previsio.csv"
+
+    def get_worker(self):
+        return None
+
+    def get_data(self):
+        ctx = add_projects_forecast_context({}, worker=self.get_worker())
+        yield [
+            "Projectes confirmats",
+            *[format_month(ym) for ym in ctx["time_span"]],
+        ]
+        for project in ctx["projects"].filter(confirmed=True):
+            totals, _ = project.work_forecasts(worker=self.get_worker())
+            yield [
+                project.name,
+                *[totals.get(ym) for ym in ctx["time_span"]],
+            ]
+
+
+class DownloadWorkerForecastCSVView(DownloadForecastCSVView):
+    filename = "previsio.csv"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.worker = get_object_or_404(Worker, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_worker(self):
+        return self.worker
+
+
+class DownloadProjectForecastCSVView(StaffRequiredMixin, CSVView):
+    filename = "previsio.csv"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project = get_object_or_404(Project, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_data(self):
+        ctx = add_workers_forecast_context(self.project)
+        yield [
+            "Treballadores",
+            *[format_month(ym) for ym in ctx["time_span"]],
+        ]
+        for worker in ctx["workers"]:
+            totals, _ = self.project.work_forecasts(worker=worker)
+            yield [
+                worker.name,
+                *[totals.get(ym) for ym in ctx["time_span"]],
+            ]
+
+
+class DownloadWorkerAssessmentCSVView(StaffRequiredMixin, CSVView):
+    filename = "avaluacio.csv"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.worker = get_object_or_404(Worker, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_data(self):
+        ctx = add_worker_projects_assessment_context({}, self.worker)
+        yield [
+            "Projectes",
+            *[format_month(ym) for ym in ctx["time_span"]],
+        ]
+        for project in ctx["projects"]:
+            totals, _ = project.work_assessments(worker=self.worker)
+            yield [
+                project.name,
+                *[format_duration(totals.get(ym)) for ym in ctx["time_span"]],
+            ]
+
+
+class DownloadProjectAssessmentCSVView(StaffRequiredMixin, CSVView):
+    filename = "avaluacio.csv"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project = get_object_or_404(Project, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_data(self):
+        ctx = add_workers_assessment_context(self.project)
+        yield [
+            "Treballadores",
+            *[format_month(ym) for ym in ctx["time_span"]],
+        ]
+        for worker in ctx["workers"]:
+            totals, _ = self.project.work_assessments(worker=worker)
+            yield [
+                worker.name,
+                *[format_duration(totals.get(ym)) for ym in ctx["time_span"]],
+            ]
 
 
 # API Views

@@ -13,15 +13,35 @@ urlpatterns = [
         name="worker_forecast",
     ),
     path(
+        "forecast/worker/<uuid:pk>/csv/",
+        views.DownloadWorkerForecastCSVView.as_view(),
+        name="download_worker_forecast_csv",
+    ),
+    path(
         "forecast/project/<uuid:pk>/",
         views.ProjectForecastView.as_view(),
         name="project_forecast",
+    ),
+    path(
+        "forecast/project/<uuid:pk>/csv/",
+        views.DownloadProjectForecastCSVView.as_view(),
+        name="download_project_forecast_csv",
+    ),
+    path(
+        "forecast/csv/",
+        views.DownloadForecastCSVView.as_view(),
+        name="download_forecast_csv",
     ),
     path("assessment/", views.AssessmentView.as_view(), name="assessment"),
     path(
         "assessment/worker/<uuid:pk>/",
         views.WorkerAssessmentView.as_view(),
         name="worker_assessment",
+    ),
+    path(
+        "assessment/worker/<uuid:pk>/csv/",
+        views.DownloadWorkerAssessmentCSVView.as_view(),
+        name="download_worker_assessment_csv",
     ),
     path(
         "assessment/worker/<uuid:pk>/update/",
@@ -38,11 +58,21 @@ urlpatterns = [
         views.ProjectAssessmentView.as_view(),
         name="project_assessment",
     ),
+    path(
+        "assessment/project/<uuid:pk>/csv/",
+        views.DownloadProjectAssessmentCSVView.as_view(),
+        name="download_project_assessment_csv",
+    ),
     path("liquidity", views.LiquidityView.as_view(), name="liquidity"),
     path(
         "liquidity/upload/",
         views.UploadLiquidityView.as_view(),
         name="upload_liquidity",
+    ),
+    path(
+        "liquidity/csv/",
+        views.DownloadLiquidityCSVView.as_view(),
+        name="download_liquidity_csv",
     ),
     path(
         "liquidity/transaction/<int:pk>/projects/update/",

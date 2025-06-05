@@ -2,6 +2,11 @@
 
 <div id="inner-content">
   <h1>{{ _("Previsió") }}</h1>
+  <div>
+    <a href="{{ url("download_forecast_csv") }}" target="_blank" download="previsio.csv">
+      {{ _("Descarrega les dades de previsió") }}
+    </a>
+  </div>
   <table class="table">
     <thead>
       {{ table_head(_("Projectes confirmats"), time_span) }}
