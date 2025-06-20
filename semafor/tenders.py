@@ -4,7 +4,6 @@ import datetime
 import requests
 
 from bs4 import BeautifulSoup
-from multiprocessing import Pool
 
 
 def extract_tenders(files):
@@ -97,8 +96,8 @@ def serialize(tenders):
 
 
 def add_location_data(tenders):
-    with Pool(100) as p:
-        tenders = p.map(add_tender_location_data, tenders)
+    for t in tenders:
+        add_tender_location_data(t)
     return tenders
 
 
