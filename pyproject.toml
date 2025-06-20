@@ -15,6 +15,9 @@ dependencies = [
     "pandas[excel]",
     "matplotlib",
     "ipython",
+    "bs4[lxml]>=0.0.2",
+    "requests>=2.32.4",
+    "lxml>=5.4.0",
 ]
 
 [dependency-groups]

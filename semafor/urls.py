@@ -6,6 +6,7 @@ import semafor.views as views
 urlpatterns = [
     path("", views.index, name="index"),
     path("ignore/", views.ignore, name="ignore"),
+    path("tenders/", views.TendersView.as_view(), name="tenders"),
     path("forecast/", views.ForecastView.as_view(), name="forecast"),
     path(
         "forecast/worker/<uuid:pk>/",

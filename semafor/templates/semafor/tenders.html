@@ -1,0 +1,14 @@
+{% extends "semafor/base.html" %}
+
+{% block content %}
+{% for tender in tenders %}
+<p><em>{{ tender.name }}</em></p>
+<ul>
+  <li>Empresa contractant: {{ tender.contractor }}</li>
+  <li>Lloc: {{ tender.location }}</li>
+  <li>Quantitat: {{ tender.amount }} €</li>
+  <li>Data límit: {{ tender.offers_until }}</li>
+  <li><a target="_blank" href="{{ tender.href.replace("deeplink:", "deeplink%3A") }}">Detalls</a></li>
+</ul>
+{% endfor %}
+{% endblock %}

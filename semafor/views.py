@@ -46,6 +46,7 @@ from semafor.utils import (
     update_forecast_pages,
 )
 
+from semafor.tenders import extract_tenders
 from semafor.time_control import update_worker_assessments
 from semafor.banking import RuralVia
 
@@ -556,6 +557,14 @@ class DownloadProjectAssessmentCSVView(StaffRequiredMixin, CSVView):
                 worker.name,
                 *[format_duration(totals.get(ym)) for ym in ctx["time_span"]],
             ]
+
+
+class TendersView(StaffRequiredMixin, TemplateView):
+    template_name = "semafor/tenders_form.html"
+
+    def post(self, request, *args, **kwargs):
+        tenders = extract_tenders(request.FILES.getlist("files"))
+        return render(request, "semafor/tenders.html", {"tenders": tenders})
 
 
 # API Views
