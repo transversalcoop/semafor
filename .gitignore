@@ -4,3 +4,4 @@ static
 Dockerfile.deployable
 .checks.*
 tags
+db_backups

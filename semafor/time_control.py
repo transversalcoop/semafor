@@ -2,6 +2,8 @@ import sqlite3
 import datetime
 import tempfile
 
+from pathlib import Path
+
 from semafor.models import Project
 from semafor.models import ProjectAlias
 from semafor.models import MissingProjectAlias
@@ -114,6 +116,11 @@ def update_worker_assessments(request, worker):
     with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
         fp.write(request.FILES["checks_file"].read())
         fp.close()
+
+        path = Path("db_backups")
+        path.mkdir(exist_ok=True)
+        with open(path / (str(worker.uuid) + ".db"), "wb") as backup:
+            backup.write(open(fp.name, "rb").read())
 
         return update_worker_assessments_aux(worker, fp.name)
 

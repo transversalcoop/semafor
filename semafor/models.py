@@ -338,11 +338,6 @@ class Worker(models.Model):
         verbose_name=_("Token d'autorització per a la APP"),
         unique=True,
     )
-    app_id = models.CharField(
-        max_length=MAX_LENGTH,
-        verbose_name=_("Identificador de l'usuari a la APP"),
-        null=True,
-    )
 
     class Meta:
         ordering = ["name"]

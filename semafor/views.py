@@ -574,17 +574,6 @@ class TendersView(StaffRequiredMixin, TemplateView):
 @require_POST
 def api_update_worker_assessment(request, token):
     worker = get_object_or_404(Worker, app_token=token)
-    app_id = request.POST.get("user_id")
-    if not app_id:
-        return JsonResponse({"ok": False, "error": "Missing user identifier"})
-
-    # The first to set up the ID wins
-    if not worker.app_id:
-        worker.app_id = app_id
-        worker.save()
-
-    if app_id != worker.app_id:
-        return JsonResponse({"ok": False, "error": "Wrong user identifier"})
 
     try:
         missing_projects, errors = update_worker_assessments(request, worker)

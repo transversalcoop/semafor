@@ -185,7 +185,7 @@ def add_worked_forecast(context, projects, worker=None):
 
 
 def add_projects_assessment_context(context):
-    projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
+    projects = Project.objects.all().prefetch_related(
         "workassessment_set",
         "workforecast_set",
         "transactions",
@@ -197,7 +197,7 @@ def add_projects_assessment_context(context):
 
 
 def add_worker_projects_assessment_context(context, worker):
-    projects = Project.objects.filter(archived=False, confirmed=True).prefetch_related(
+    projects = Project.objects.all().prefetch_related(
         "workassessment_set__worker",
         "workforecast_set",
     )
